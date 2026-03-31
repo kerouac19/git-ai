@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.20",
+  "base_commit_sha": "7f30c30dd10aecef7df4645af8f3fd9355f52bb0",
+  "prompts": {
+    "9a6976d8aeb57f4f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c0fb35fc-d8c2-44c6-a806-da8f8dd904c2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19 <kerouac19@gmail.com>",
+      "messages": [],
+      "total_additions": 101,
+      "total_deletions": 0,
+      "accepted_lines": 101,
+      "overriden_lines": 0
+    }
+  }
+}
