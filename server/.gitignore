@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# Local dev secrets
+.env
+.env.local
+.env.local-https
+.env.*.local
+
+# Local HTTPS certs
+certs/*.pem
+
+# SQLite dev data
+data/*.sqlite
+data/*.sqlite-*
