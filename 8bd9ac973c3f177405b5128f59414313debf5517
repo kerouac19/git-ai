@@ -1,0 +1,32 @@
+server-go/internal/handler/login.go
+  00f2cad1ecf97396 112-115
+server-go/internal/templates/dashboard.html
+  00f2cad1ecf97396 316
+server-go/cmd/server/main.go
+  00f2cad1ecf97396 11,165,343-344,354-355
+server-go/cmd/server/templates/dashboard.html
+  00f2cad1ecf97396 316
+server-go/cmd/server/templates/login.html
+  00f2cad1ecf97396 180,193-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "8bd9ac973c3f177405b5128f59414313debf5517",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 27,
+      "total_deletions": 5,
+      "accepted_lines": 153,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/76943e94585cf10490c6b71691ddae1bb85ece31f3dee509ea36a08b3789fbdb"
+    }
+  }
+}
