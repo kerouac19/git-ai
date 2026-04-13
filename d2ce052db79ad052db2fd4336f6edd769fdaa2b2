@@ -1,0 +1,207 @@
+.gitignore
+  00f2cad1ecf97396 19-23
+server-go/internal/templates/dashboard.html
+  00f2cad1ecf97396 1-322
+server-go/cmd/server/templates/login_required.html
+  00f2cad1ecf97396 31,161
+  23a7bee58ec6c451 200-205,208
+server-go/Dockerfile
+  7c04c7c14d6d79d1 1,6
+server-go/internal/handler/sysconfig.go
+  00f2cad1ecf97396 1-114
+server-go/internal/database/migrations/003_create_users.down.sql
+  23a7bee58ec6c451 1
+server-go/internal/crypto/hash.go
+  00f2cad1ecf97396 1-20
+server-go/cmd/server/templates/device_result.html
+  00f2cad1ecf97396 1-205
+server-go/internal/crypto/secrets.go
+  00f2cad1ecf97396 1-77
+server-go/go.mod
+  7c04c7c14d6d79d1 3
+server-go/internal/model/audit.go
+  00f2cad1ecf97396 1-17
+server-go/deploy/opt-git-ai.env
+  00f2cad1ecf97396 1-31
+server-go/internal/service/cas.go
+  00f2cad1ecf97396 1-312
+server-go/internal/auth/middleware_test.go
+  00f2cad1ecf97396 1-66
+server-go/internal/service/user.go
+  23a7bee58ec6c451 1-81
+server-go/cmd/server/templates/login.html
+  23a7bee58ec6c451 1-195
+server-go/internal/handler/releases.go
+  00f2cad1ecf97396 1-88
+server-go/docs/production-deployment.md
+  00f2cad1ecf97396 1-576
+server-go/internal/config/config.go
+  23a7bee58ec6c451 34-35,142-143
+  ccfa14b3443c5767 1-33,36-141,144-185
+server-go/internal/handler/login.go
+  23a7bee58ec6c451 1-179
+server-go/internal/model/config.go
+  00f2cad1ecf97396 1-27
+server-go/internal/database/postgres.go
+  00f2cad1ecf97396 1-34
+server-go/internal/service/sysconfig.go
+  00f2cad1ecf97396 1-210
+server/docs/go-rewrite-evaluation.md
+  9a6976d8aeb57f4f 1-101
+server-go/internal/service/dashboard.go
+  00f2cad1ecf97396 1-350
+server-go/internal/middleware/audit.go
+  00f2cad1ecf97396 1-150
+server-go/internal/model/cas.go
+  00f2cad1ecf97396 1-11
+server-go/internal/database/migrations/embed.go
+  00f2cad1ecf97396 1-6
+server-go/internal/service/bundle.go
+  00f2cad1ecf97396 1-47
+server-go/internal/middleware/security_headers.go
+  00f2cad1ecf97396 1-50
+server-go/internal/handler/cas.go
+  00f2cad1ecf97396 1-77
+server-go/cmd/server/templates/device_flow.html
+  00f2cad1ecf97396 1-237
+server-go/internal/model/bundle.go
+  00f2cad1ecf97396 1-24
+server-go/internal/model/authorship.go
+  00f2cad1ecf97396 1-37
+server-go/cmd/server/templates/dashboard.html
+  00f2cad1ecf97396 1-322
+server-go/internal/handler/dashboard.go
+  00f2cad1ecf97396 1-63
+server-go/internal/templates/device_result.html
+  00f2cad1ecf97396 1-205
+server-go/internal/model/user.go
+  23a7bee58ec6c451 1-20
+server-go/internal/templates/login_required.html
+  00f2cad1ecf97396 1-215
+server-go/internal/handler/authorship.go
+  00f2cad1ecf97396 1-167
+server-go/cmd/server/main.go
+  ccfa14b3443c5767 83,103,106,122,143-149,165,224,232-249
+  23a7bee58ec6c451 20,79,89-91,93,127-129,160-164,334-354,360-373,563-634
+server-go/internal/database/migrate.go
+  00f2cad1ecf97396 1-30
+server-go/internal/service/audit.go
+  00f2cad1ecf97396 1-50
+server-go/deploy/git-ai.service
+  00f2cad1ecf97396 1-40
+docs/http-client-contracts.md
+  00f2cad1ecf97396 1-583
+server-go/internal/handler/health.go
+  00f2cad1ecf97396 1-45
+server-go/internal/auth/device_flow.go
+  00f2cad1ecf97396 21-24
+  23a7bee58ec6c451 269-285
+server-go/README.md
+  00f2cad1ecf97396 1-418
+server-go/deploy/nginx.conf
+  00f2cad1ecf97396 1-71
+server-go/internal/database/migrations/003_create_users.up.sql
+  23a7bee58ec6c451 1-14
+server-go/internal/database/migrations/001_create_tables.down.sql
+  00f2cad1ecf97396 1-7
+server-go/internal/handler/bundle.go
+  00f2cad1ecf97396 1-57
+server-go/internal/templates/device_flow.html
+  00f2cad1ecf97396 1-237
+server-go/internal/database/migrations/002_create_bundles.down.sql
+  00f2cad1ecf97396 1
+server-go/internal/middleware/https_redirect.go
+  00f2cad1ecf97396 1-36
+server-go/internal/service/authorship.go
+  00f2cad1ecf97396 1-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "d2ce052db79ad052db2fd4336f6edd769fdaa2b2",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 6014,
+      "total_deletions": 2073,
+      "accepted_lines": 5996,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/4a23f5091e168b08a55c7fde92b3c94dbd0e97b70240454488ceab2d3d72abc3"
+    },
+    "23a7bee58ec6c451": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b9456497-4465-4015-a47f-bdaff66cbc15",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 639,
+      "total_deletions": 12,
+      "accepted_lines": 639,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/5827dad5f5632c5951c71e365b1f02770641cf4a7a224a5f4cbf38897f0b261f"
+    },
+    "7c04c7c14d6d79d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99d4ccac-bfa7-43e4-8e3c-21d3d620ad74",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 3,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/a9cdecead233e080231f2d31114bb03fb8d1a6503b2b955bc8f2b790112b6b27"
+    },
+    "9a6976d8aeb57f4f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c0fb35fc-d8c2-44c6-a806-da8f8dd904c2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19 <kerouac19@gmail.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 101,
+      "overriden_lines": 0
+    },
+    "ccfa14b3443c5767": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d864c-e620-7e21-824e-faedf85c1eee",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 213,
+      "total_deletions": 6,
+      "accepted_lines": 212,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/37993a700bb6cf162e064a96bc2a8a3a4f655c250bdf175824573c277dcf25d4"
+    },
+    "f39e113ecd7ffba9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d7137-3f16-7180-8719-4092ba385530",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/fb662e97ea5f2266cf66a1a768eb422c291f4c039ca14a554e89675f05e39f3e"
+    }
+  }
+}
