@@ -1,0 +1,76 @@
+server-go/internal/auth/device_flow.go
+  03d8e5916da36d7a 400
+  c2645a7635d6ea37 119-120,227-234,286-295,298,303-304,459-460
+  05c1d4d383b85b3f 121,226
+server-go/internal/service/metrics_test.go
+  05c1d4d383b85b3f 3-4,6-7,91-106
+server-go/README.md
+  05c1d4d383b85b3f 340-394
+server-go/internal/handler/login.go
+  03d8e5916da36d7a 79
+server-go/cmd/server/main.go
+  c2645a7635d6ea37 373,375-376,379
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "f7247c6f8dcdd8ee6fbf59eb781946d80d69ffb9",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/eb63e942293786aac62d23fb7393c01aa3d8aafb9205b6df40b4e38e9be4ac1b"
+    },
+    "03d8e5916da36d7a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7a8fe65-d7ff-4ab8-b0cb-8fab1d4769f5",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 13,
+      "accepted_lines": 2,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/48590aec52ebbeeaf4ee371ec928d2ca771354e4972b5d27a280b62b275fab4e"
+    },
+    "05c1d4d383b85b3f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8775-4ce5-7cb2-85bc-2504ea2acff1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 135,
+      "total_deletions": 3,
+      "accepted_lines": 427,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/51fe4a5566faa7d829e32abbb87a8d3d0af3e7b31fa17f9c5afddabd13ed3a33"
+    },
+    "c2645a7635d6ea37": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "301bd3f7-09f5-4a3d-ab04-5cd4800ac555",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 6,
+      "accepted_lines": 30,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/8ef36e8e4e6b5a7394bbbd7381c122bbc51f637716d3fb3eb0c5540f381f3376"
+    }
+  }
+}
