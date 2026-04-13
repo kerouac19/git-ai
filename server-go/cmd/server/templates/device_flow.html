@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Git AI Device Authorization</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #0f766e;
+        --accent-soft: #f0fdfa;
+        --accent-border: #99f6e4;
+        --danger: #be123c;
+        --danger-soft: #fff1f2;
+        --success: #15803d;
+        --success-soft: #f0fdf4;
+        --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --panel-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        background-color: var(--bg);
+        background-image:
+          radial-gradient(at 0% 0%, rgba(15, 118, 110, 0.05) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(15, 118, 110, 0.05) 0px, transparent 50%);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      main {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: var(--panel-shadow);
+      }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { font-size: 2.25rem; font-weight: 800; tracking: -0.025em; margin-bottom: 8px; color: var(--text); }
+      h2 { font-size: 0.875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+      p, li { line-height: 1.6; }
+      .muted { color: var(--muted); font-size: 0.9375rem; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--card-shadow);
+      }
+      .kpi {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        margin: 4px 0;
+        color: var(--accent);
+      }
+      .kpi-unit {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--muted);
+        margin-left: 4px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+      button, a.button {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        cursor: pointer;
+        text-decoration: none;
+        padding: 10px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+      }
+      button.primary, a.button.primary {
+        background: var(--accent);
+        color: white;
+      }
+      button.primary:hover, a.button.primary:hover {
+        background: #0d5a52;
+        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2);
+      }
+      button.secondary, a.button.secondary {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+      button.secondary:hover, a.button.secondary:hover {
+        background: #ffe4e6;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        background: #f1f5f9;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: var(--accent);
+      }
+      .notice {
+        padding: 16px;
+        border-radius: 12px;
+        margin: 20px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+      }
+      .notice.ok { background: var(--success-soft); color: var(--success); border: 1px solid #dcfce7; }
+      .notice.error { background: var(--danger-soft); color: var(--danger); border: 1px solid #fee2e2; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 10px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .badge-accent { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+      }
+      .status-dot.online { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2); }
+      .status-dot.offline { background: #94a3b8; }
+
+      .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+      .avatar {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--accent), #2dd4bf);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 800;
+        box-shadow: 0 8px 16px rgba(15, 118, 110, 0.2);
+      }
+      .metric-label {
+        color: var(--muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+      form { margin: 0; }
+      @media (max-width: 640px) {
+        .profile-header { flex-direction: column; text-align: center; }
+        h1 { font-size: 1.75rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <p class="muted">Git AI device authorization</p>
+        <h1>Approve CLI access</h1>
+        <p>Authorize the pending CLI login for <strong>{{.SubjectName}}</strong> ({{.SubjectEmail}}).</p>
+        <div class="grid" style="margin-top: 24px;">
+          <div class="card">
+            <h2>User Code</h2>
+            <p><code>{{.UserCode}}</code></p>
+          </div>
+          <div class="card">
+            <h2>Expires At</h2>
+            <p>{{.ExpiresAt}}</p>
+          </div>
+          <div class="card">
+            <h2>Status</h2>
+            <p>{{.Status}}</p>
+          </div>
+        </div>
+        {{if eq .Status "approved"}}
+        <div class="notice ok">This device has already been approved.</div>
+        {{else if eq .Status "denied"}}
+        <div class="notice error">This device request has already been denied.</div>
+        {{end}}
+        {{if eq .Status "pending"}}
+        <div class="actions">
+          <form method="post" action="/oauth/device/approve">
+            <input type="hidden" name="user_code" value="{{.UserCode}}" />
+            <button class="primary" type="submit">Approve Device</button>
+          </form>
+          <form method="post" action="/oauth/device/deny">
+            <input type="hidden" name="user_code" value="{{.UserCode}}" />
+            <button class="secondary" type="submit">Deny</button>
+          </form>
+        </div>
+        {{else}}
+        <div class="actions">
+          <a class="button primary" href="/me">Open Dashboard</a>
+        </div>
+        {{end}}
+      </section>
+    </main>
+  </body>
+</html>

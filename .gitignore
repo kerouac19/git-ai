@@ -16,6 +16,11 @@ yarn-error.log*
 dev-debug.log
 # Dependency directories
 node_modules/
+
+# Go service build outputs
+server-go/bin/
+server-go/server
+
 # Environment variables
 .env
 # Editor directories and files
@@ -40,4 +45,3 @@ fuzz/corpus/
 # Worktrees
 .worktrees/
 .claude/worktrees/
-
