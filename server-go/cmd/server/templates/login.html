@@ -177,7 +177,7 @@
           });
           var data = await res.json();
           if (data.success) {
-            window.location.href = '/me';
+            window.location.href = getSafeRedirect();
           } else {
             errEl.textContent = data.message || 'Login failed';
             errEl.style.display = 'block';
@@ -189,6 +189,20 @@
           btn.disabled = false;
           btn.textContent = 'Sign in';
         }
+      }
+
+      function getSafeRedirect() {
+        var redirect = new URLSearchParams(window.location.search).get('redirect');
+        if (!redirect) {
+          return '/me';
+        }
+
+        redirect = redirect.trim();
+        if (redirect.charAt(0) === '/' && redirect.charAt(1) !== '/' && redirect.indexOf(String.fromCharCode(92)) === -1) {
+          return redirect;
+        }
+
+        return '/me';
       }
     </script>
   </body>

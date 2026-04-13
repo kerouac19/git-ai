@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -161,6 +162,7 @@ func main() {
 		// User auth
 		api.POST("/user/login", loginH.Login)
 		api.GET("/user/logout", loginH.Logout)
+		api.POST("/user/logout", loginH.Logout)
 		api.POST("/user/register", jwtMW, adminOnly(), loginH.Register)
 		api.POST("/bundles", bundleH.Create)
 
@@ -338,7 +340,8 @@ func handleDeviceApprove(svc *auth.DeviceFlowService, jwtSecret string, isProduc
 			if userCode == "" {
 				userCode = c.Query("user_code")
 			}
-			renderResult(c, http.StatusUnauthorized, "Login Required", "Please log in first before approving device authorization.", "error", "/login?redirect=/oauth/device?user_code="+userCode, "Go to Login")
+			redirect := url.QueryEscape("/oauth/device?user_code=" + userCode)
+			renderResult(c, http.StatusUnauthorized, "Login Required", "Please log in first before approving device authorization.", "error", "/login?redirect="+redirect, "Go to Login")
 			return
 		}
 
@@ -348,7 +351,8 @@ func handleDeviceApprove(svc *auth.DeviceFlowService, jwtSecret string, isProduc
 			if userCode == "" {
 				userCode = c.Query("user_code")
 			}
-			renderResult(c, http.StatusUnauthorized, "Session Expired", "Your session has expired. Please log in again.", "error", "/login?redirect=/oauth/device?user_code="+userCode, "Go to Login")
+			redirect := url.QueryEscape("/oauth/device?user_code=" + userCode)
+			renderResult(c, http.StatusUnauthorized, "Session Expired", "Your session has expired. Please log in again.", "error", "/login?redirect="+redirect, "Go to Login")
 			return
 		}
 

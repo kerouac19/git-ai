@@ -109,6 +109,10 @@ func (h *LoginHandler) Login(c *gin.Context) {
 
 func (h *LoginHandler) Logout(c *gin.Context) {
 	c.Header("Set-Cookie", auth.ClearSessionCookie(h.IsProduction))
+	if strings.Contains(c.GetHeader("Accept"), "text/html") {
+		c.Redirect(http.StatusSeeOther, "/login")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Logged out"})
 }
 
