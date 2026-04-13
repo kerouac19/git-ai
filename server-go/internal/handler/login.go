@@ -76,12 +76,7 @@ func (h *LoginHandler) Login(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := auth.SignRefreshToken(auth.TokenSubject{
-		Sub:   subject.Sub,
-		Email: subject.Email,
-		Name:  subject.Name,
-		Role:  subject.Role,
-	}, h.JWTSecret, loginRefreshTokenTTL)
+	refreshToken, err := auth.SignRefreshToken(subject, h.JWTSecret, loginRefreshTokenTTL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to issue token"})
 		return

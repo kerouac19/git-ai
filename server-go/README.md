@@ -337,6 +337,61 @@ git-ai login          # Device Flow 登录
 git-ai checkpoint ... # 触发 CAS + Metrics 上传
 ```
 
+### 验证真实 `git-ai` 数据同步
+
+Dashboard 顶部的“未连接/正在同步”不是登录状态，而是最近一次 Metrics 同步状态：只有当前登录用户在 `metrics_events` 中存在 `received_at` 记录时，才会显示“正在同步”。
+
+使用 HTTPS 域名联调时，先把 CLI 指向 Go server，并重启后台服务，确保 daemon 读取到最新配置：
+
+```bash
+git-ai config set api_base_url https://gitai.tongbaninfo.com
+git-ai logout
+git-ai login
+git-ai whoami
+git-ai bg restart
+```
+
+确认 `git-ai whoami` 输出的 `User ID` 与浏览器 `https://gitai.tongbaninfo.com/me` 页面中的“用户识别码”一致。若不一致，说明浏览器和 CLI 登录的是不同用户，Dashboard 不会显示 CLI 上传的数据。
+
+然后创建一个临时仓库并产生 checkpoint metrics：
+
+```bash
+rm -rf /tmp/git-ai-sync-test
+mkdir /tmp/git-ai-sync-test
+cd /tmp/git-ai-sync-test
+
+git init
+git config user.name "Local Tester"
+git config user.email "tester@example.com"
+git remote add origin https://example.com/tongban/git-ai-sync-test.git
+
+printf "hello from git-ai sync test\n" > sync.txt
+git add sync.txt
+
+git-ai checkpoint mock_ai sync.txt
+sleep 5
+git-ai flush-metrics-db
+```
+
+刷新 Dashboard：
+
+```text
+https://gitai.tongbaninfo.com/me
+```
+
+预期结果：
+
+- 顶部状态从“未连接”变为“正在同步”
+- “最后同步”显示时间
+- “同步事件总数”大于 0
+- “触达文件总数”大于 0
+
+也可以直接查询数据库确认：
+
+```bash
+psql <db_name> -c "select user_id, count(*) as events, max(received_at) as last_sync from metrics_events group by user_id;"
+```
+
 ## Docker 部署
 
 ```bash

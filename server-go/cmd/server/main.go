@@ -370,10 +370,13 @@ func handleDeviceApprove(svc *auth.DeviceFlowService, jwtSecret string, isProduc
 			Orgs:          claims.Orgs,
 			Role:          claims.Role,
 		}
+		log.Printf("[DEBUG] Updating device code subject: userCode=%s, sub=%s, email=%s, name=%s", userCode, realSubject.Sub, realSubject.Email, realSubject.Name)
 		if err := svc.UpdateDeviceCodeSubject(c.Request.Context(), userCode, realSubject); err != nil {
-			renderResult(c, http.StatusInternalServerError, "Error", "Failed to update device authorization.", "error", "", "")
+			log.Printf("[ERROR] Failed to update device code subject: %v", err)
+			renderResult(c, http.StatusInternalServerError, "Error", fmt.Sprintf("Failed to update device authorization: %v", err), "error", "", "")
 			return
 		}
+		log.Printf("[DEBUG] Successfully updated device code subject for userCode=%s", userCode)
 
 		entry, err := svc.ApproveDeviceCode(c.Request.Context(), userCode)
 		if err != nil || entry == nil {

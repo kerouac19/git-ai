@@ -84,7 +84,7 @@ func (s *MetricsService) ValidateBatchShape(body map[string]any) (*model.Metrics
 }
 
 func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinctID *string, batch *model.MetricsBatch) ([]MetricsUploadError, error) {
-	var errors []MetricsUploadError
+	errors := make([]MetricsUploadError, 0)
 	var validRows [][]any
 
 	for i, event := range batch.Events {

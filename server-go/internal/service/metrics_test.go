@@ -1,6 +1,10 @@
 package service
 
-import "testing"
+import (
+	"testing"
+
+	"git-ai-server/internal/model"
+)
 
 func TestValidateBatchShapeAcceptsCurrentMetricsSchema(t *testing.T) {
 	svc := &MetricsService{}
@@ -82,5 +86,23 @@ func TestValidateEventRejectsNonObjectEvent(t *testing.T) {
 
 	if errMsg := validateEvent(batch.Events[0]); errMsg != "event must be an object" {
 		t.Fatalf("validateEvent() error = %q, want %q", errMsg, "event must be an object")
+	}
+}
+
+func TestUploadBatchReturnsEmptyErrorsSlice(t *testing.T) {
+	svc := &MetricsService{}
+
+	errors, err := svc.UploadBatch(t.Context(), "user-1", nil, &model.MetricsBatch{
+		V:      1,
+		Events: nil,
+	})
+	if err != nil {
+		t.Fatalf("UploadBatch() error = %v", err)
+	}
+	if errors == nil {
+		t.Fatal("UploadBatch() errors = nil, want empty slice")
+	}
+	if len(errors) != 0 {
+		t.Fatalf("UploadBatch() errors length = %d, want 0", len(errors))
 	}
 }

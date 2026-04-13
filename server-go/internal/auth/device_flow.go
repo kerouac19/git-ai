@@ -116,10 +116,12 @@ func (s *DeviceFlowService) ExchangeDeviceCode(ctx context.Context, deviceCode s
 	}
 
 	if entry.Status == "approved" {
+		subject := s.parseStoredSubject(entry.SubjectJSON)
+		fmt.Printf("[DEBUG] ExchangeDeviceCode: parsed subject from DB: sub=%s, email=%s, name=%s\n", subject.Sub, subject.Email, subject.Name)
+
 		if err := s.deleteDeviceCode(ctx, deviceCode); err != nil {
 			return nil, err
 		}
-		subject := s.parseStoredSubject(entry.SubjectJSON)
 		return s.issueTokenResponse(subject)
 	}
 
@@ -221,6 +223,15 @@ func (s *DeviceFlowService) ApproveDeviceCode(ctx context.Context, userCode stri
 			return nil, fmt.Errorf("approving device code: %w", err)
 		}
 		status = "approved"
+
+		// Re-fetch the entry to get the updated subject (in case UpdateDeviceCodeSubject was called before)
+		entry, err = s.findDeviceCodeByUserCode(ctx, userCode)
+		if err != nil {
+			return nil, err
+		}
+		if entry != nil {
+			subject = s.parseStoredSubject(entry.SubjectJSON)
+		}
 	}
 
 	return &DeviceCodeInfo{
@@ -272,13 +283,25 @@ func (s *DeviceFlowService) UpdateDeviceCodeSubject(ctx context.Context, userCod
 		return fmt.Errorf("marshaling subject: %w", err)
 	}
 
-	_, err = s.Pool.Exec(ctx, `
+	// First check if the device code exists and what its status is
+	var currentStatus string
+	err = s.Pool.QueryRow(ctx, `
+		SELECT status FROM public.oauth_device_codes
+		WHERE user_code = $1`, userCode).Scan(&currentStatus)
+	if err != nil {
+		return fmt.Errorf("checking device code status: %w (userCode=%s)", err, userCode)
+	}
+
+	tag, err := s.Pool.Exec(ctx, `
 		UPDATE public.oauth_device_codes
 		SET subject_json = $1::jsonb, user_id = $2
-		WHERE user_code = $3 AND status = 'pending'`,
+		WHERE user_code = $3 AND status IN ('pending', 'denied')`,
 		string(subjectJSON), subject.Sub, userCode)
 	if err != nil {
 		return fmt.Errorf("updating device code subject: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("device code not updated (userCode=%s, currentStatus=%s, expectedStatus=pending|denied)", userCode, currentStatus)
 	}
 	return nil
 }
@@ -374,13 +397,7 @@ func (s *DeviceFlowService) issueTokenResponse(subject TokenSubject) (map[string
 		return nil, fmt.Errorf("signing access token: %w", err)
 	}
 
-	refreshSubject := TokenSubject{
-		Sub:   subject.Sub,
-		Email: subject.Email,
-		Name:  subject.Name,
-		Role:  subject.Role,
-	}
-	refreshToken, err := SignRefreshToken(refreshSubject, s.JWTSecret, refreshTokenTTL)
+	refreshToken, err := SignRefreshToken(subject, s.JWTSecret, refreshTokenTTL)
 	if err != nil {
 		return nil, fmt.Errorf("signing refresh token: %w", err)
 	}
@@ -439,7 +456,8 @@ func (s *DeviceFlowService) parseStoredSubject(serialized string) TokenSubject {
 		return makeDefaultSubject(nil)
 	}
 
-	if subject.Sub == "" || subject.Email == "" {
+	// Only require Sub to be non-empty; Email can be empty for users without email
+	if subject.Sub == "" {
 		return makeDefaultSubject(nil)
 	}
 
