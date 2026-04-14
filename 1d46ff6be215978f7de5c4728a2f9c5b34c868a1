@@ -1,0 +1,72 @@
+server-go/README.md
+  9d9e0fad1d656b5b 29,45,76,100,131,162
+server-go/Dockerfile
+  9d9e0fad1d656b5b 6,10,12
+server-go/deploy/git-ai.service
+  9d9e0fad1d656b5b 13-14
+server-go/docs/production-deployment.md
+  9d9e0fad1d656b5b 53,59,76,84,118,280,293,490
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "1d46ff6be215978f7de5c4728a2f9c5b34c868a1",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/eb63e942293786aac62d23fb7393c01aa3d8aafb9205b6df40b4e38e9be4ac1b"
+    },
+    "05c1d4d383b85b3f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8775-4ce5-7cb2-85bc-2504ea2acff1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 347,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/53bc3be644454905392ca340ade2d9f46d5edec8926049432e82598f940bba75"
+    },
+    "9d9e0fad1d656b5b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8b25-e50b-7660-ad7f-66bf58a36bbe",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 19,
+      "accepted_lines": 71,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/bc9ad31271d0153a06a23e5f5ee953f41ba307d1050a4f501dcb735dfb21c477"
+    },
+    "c9e21aee2a598df0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db44dc45-7602-411c-b128-8207bd928e94",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 19,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/dc656f54b9a0ace330d6b9a9a2f7d9221ead3c020fa79830a7822bf7bc92dee4"
+    }
+  }
+}
