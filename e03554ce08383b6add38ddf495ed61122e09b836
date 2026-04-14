@@ -1,0 +1,66 @@
+server-go/scripts/batch-create-users.sh
+  9d9e0fad1d656b5b 1-250
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "e03554ce08383b6add38ddf495ed61122e09b836",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/eb63e942293786aac62d23fb7393c01aa3d8aafb9205b6df40b4e38e9be4ac1b"
+    },
+    "05c1d4d383b85b3f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8775-4ce5-7cb2-85bc-2504ea2acff1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 347,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/53bc3be644454905392ca340ade2d9f46d5edec8926049432e82598f940bba75"
+    },
+    "9d9e0fad1d656b5b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8b25-e50b-7660-ad7f-66bf58a36bbe",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 609,
+      "total_deletions": 0,
+      "accepted_lines": 661,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/23b59e39ea5303b8057e79c185e79aeb2c3bdce97c8525b43b23d04b4afbe2c9"
+    },
+    "c9e21aee2a598df0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db44dc45-7602-411c-b128-8207bd928e94",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 19,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/dc656f54b9a0ace330d6b9a9a2f7d9221ead3c020fa79830a7822bf7bc92dee4"
+    }
+  }
+}
