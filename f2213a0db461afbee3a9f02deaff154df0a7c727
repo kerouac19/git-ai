@@ -1,0 +1,72 @@
+server-go/internal/auth/device_flow.go
+  2fbf167244b41d86 51,71,74-75,77,114-116,122,185,210,238,273,295,301,445-447,451-452,457,460,481,493
+server-go/internal/database/migrations/004_device_codes_nullable_user.down.sql
+  2fbf167244b41d86 1-5
+server-go/cmd/server/main.go
+  2fbf167244b41d86 329-332
+server-go/internal/database/migrations/004_device_codes_nullable_user.up.sql
+  2fbf167244b41d86 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "f2213a0db461afbee3a9f02deaff154df0a7c727",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/eb63e942293786aac62d23fb7393c01aa3d8aafb9205b6df40b4e38e9be4ac1b"
+    },
+    "05c1d4d383b85b3f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8775-4ce5-7cb2-85bc-2504ea2acff1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 347,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/53bc3be644454905392ca340ade2d9f46d5edec8926049432e82598f940bba75"
+    },
+    "2fbf167244b41d86": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "65dcd078-1079-414c-befc-27147f28bd02",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 28,
+      "accepted_lines": 43,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/406ba7af4a28dac228489d66c90ec804d2ef3cececc8d8776397f7cf29fd2a9a"
+    },
+    "c9e21aee2a598df0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db44dc45-7602-411c-b128-8207bd928e94",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 19,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/dc656f54b9a0ace330d6b9a9a2f7d9221ead3c020fa79830a7822bf7bc92dee4"
+    }
+  }
+}
