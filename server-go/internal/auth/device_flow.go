@@ -48,7 +48,7 @@ type deviceCodeRecord struct {
 	ApprovedAt   *time.Time
 	DeniedAt     *time.Time
 	LastPolledAt *time.Time
-	SubjectJSON  string
+	SubjectJSON  *string
 }
 
 type DeviceFlowService struct {
@@ -65,22 +65,16 @@ func (s *DeviceFlowService) StartDeviceFlow(ctx context.Context, baseURL string)
 	deviceCode := uuid.New().String()
 	userCode := makeUserCode()
 	verificationURI := baseURL + "/oauth/device"
-	subject := makeDefaultSubject(nil)
-
-	subjectJSON, err := json.Marshal(subject)
-	if err != nil {
-		return nil, fmt.Errorf("marshaling subject: %w", err)
-	}
 
 	expiresAt := now.Add(time.Duration(deviceCodeExpiresInSeconds) * time.Second)
 
-	_, err = s.Pool.Exec(ctx, `
+	_, err := s.Pool.Exec(ctx, `
 		INSERT INTO public.oauth_device_codes (
 			device_code, user_code, client_id, verification_uri,
-			status, user_id, subject_json, created_at, expires_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)`,
+			status, created_at, expires_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 		deviceCode, userCode, "git-ai-cli", verificationURI,
-		"pending", subject.Sub, string(subjectJSON), now, expiresAt,
+		"pending", now, expiresAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("inserting device code: %w", err)
@@ -117,12 +111,15 @@ func (s *DeviceFlowService) ExchangeDeviceCode(ctx context.Context, deviceCode s
 
 	if entry.Status == "approved" {
 		subject := s.parseStoredSubject(entry.SubjectJSON)
+		if subject == nil {
+			return oauthError("server_error", "Device code approved but no user data found"), nil
+		}
 		fmt.Printf("[DEBUG] ExchangeDeviceCode: parsed subject from DB: sub=%s, email=%s, name=%s\n", subject.Sub, subject.Email, subject.Name)
 
 		if err := s.deleteDeviceCode(ctx, deviceCode); err != nil {
 			return nil, err
 		}
-		return s.issueTokenResponse(subject)
+		return s.issueTokenResponse(*subject)
 	}
 
 	if entry.LastPolledAt != nil &&
@@ -185,7 +182,7 @@ func (s *DeviceFlowService) GetDeviceCodeByUserCode(ctx context.Context, userCod
 		UserCode:  entry.UserCode,
 		ExpiresAt: entry.ExpiresAt.UnixMilli(),
 		Status:    entry.Status,
-		Subject:   &subject,
+		Subject:   subject,
 	}, nil
 }
 
@@ -210,7 +207,7 @@ func (s *DeviceFlowService) ApproveDeviceCode(ctx context.Context, userCode stri
 			UserCode:  entry.UserCode,
 			ExpiresAt: entry.ExpiresAt.UnixMilli(),
 			Status:    entry.Status,
-			Subject:   &subject,
+			Subject:   subject,
 		}, nil
 	}
 
@@ -238,7 +235,7 @@ func (s *DeviceFlowService) ApproveDeviceCode(ctx context.Context, userCode stri
 		UserCode:  entry.UserCode,
 		ExpiresAt: entry.ExpiresAt.UnixMilli(),
 		Status:    status,
-		Subject:   &subject,
+		Subject:   subject,
 	}, nil
 }
 
@@ -273,7 +270,7 @@ func (s *DeviceFlowService) DenyDeviceCode(ctx context.Context, userCode string)
 		UserCode:  entry.UserCode,
 		ExpiresAt: entry.ExpiresAt.UnixMilli(),
 		Status:    status,
-		Subject:   &subject,
+		Subject:   subject,
 	}, nil
 }
 
@@ -295,13 +292,13 @@ func (s *DeviceFlowService) UpdateDeviceCodeSubject(ctx context.Context, userCod
 	tag, err := s.Pool.Exec(ctx, `
 		UPDATE public.oauth_device_codes
 		SET subject_json = $1::jsonb, user_id = $2
-		WHERE user_code = $3 AND status IN ('pending', 'denied')`,
+		WHERE user_code = $3 AND status = 'pending'`,
 		string(subjectJSON), subject.Sub, userCode)
 	if err != nil {
 		return fmt.Errorf("updating device code subject: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("device code not updated (userCode=%s, currentStatus=%s, expectedStatus=pending|denied)", userCode, currentStatus)
+		return fmt.Errorf("device code not updated (userCode=%s, currentStatus=%s, expectedStatus=pending)", userCode, currentStatus)
 	}
 	return nil
 }
@@ -445,23 +442,22 @@ func subjectFromClaims(claims *Claims) TokenSubject {
 	return subject
 }
 
-func (s *DeviceFlowService) parseStoredSubject(serialized string) TokenSubject {
-	var parsed map[string]interface{}
-	if err := json.Unmarshal([]byte(serialized), &parsed); err != nil {
-		return makeDefaultSubject(nil)
+func (s *DeviceFlowService) parseStoredSubject(serialized *string) *TokenSubject {
+	if serialized == nil || *serialized == "" {
+		return nil
 	}
 
 	var subject TokenSubject
-	if err := json.Unmarshal([]byte(serialized), &subject); err != nil {
-		return makeDefaultSubject(nil)
+	if err := json.Unmarshal([]byte(*serialized), &subject); err != nil {
+		return nil
 	}
 
 	// Only require Sub to be non-empty; Email can be empty for users without email
 	if subject.Sub == "" {
-		return makeDefaultSubject(nil)
+		return nil
 	}
 
-	return subject
+	return &subject
 }
 
 func oauthError(errorCode, description string) map[string]interface{} {
@@ -482,7 +478,7 @@ func (s *DeviceFlowService) findDeviceCodeByDeviceCode(ctx context.Context, devi
 	row := s.Pool.QueryRow(ctx, `
 		SELECT device_code, user_code, status, expires_at,
 			approved_at, denied_at, last_polled_at,
-			subject_json::text
+			CASE WHEN subject_json IS NOT NULL THEN subject_json::text END
 		FROM public.oauth_device_codes
 		WHERE device_code = $1
 		LIMIT 1`, deviceCode)
@@ -494,7 +490,7 @@ func (s *DeviceFlowService) findDeviceCodeByUserCode(ctx context.Context, userCo
 	row := s.Pool.QueryRow(ctx, `
 		SELECT device_code, user_code, status, expires_at,
 			approved_at, denied_at, last_polled_at,
-			subject_json::text
+			CASE WHEN subject_json IS NOT NULL THEN subject_json::text END
 		FROM public.oauth_device_codes
 		WHERE user_code = $1
 		LIMIT 1`, userCode)

@@ -326,6 +326,10 @@ func handleDeviceFlowPage(svc *auth.DeviceFlowService) gin.HandlerFunc {
 			subjectName = entry.Subject.Name
 			subjectEmail = entry.Subject.Email
 		}
+		if subjectName == "" {
+			subjectName = "CLI User"
+			subjectEmail = "pending authorization"
+		}
 
 		// Format expiry time
 		expiresAtStr := ""
