@@ -19,7 +19,7 @@ node_modules/
 
 # Go service build outputs
 server-go/bin/
-server-go/server
+server-go/git-ai-server
 
 # Environment variables
 .env
@@ -46,3 +46,4 @@ fuzz/corpus/
 .worktrees/
 .claude/worktrees/
 .factory
+users.csv
