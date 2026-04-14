@@ -1,0 +1,89 @@
+server-go/scripts/users.csv
+  c9e21aee2a598df0 1-3
+.gitignore
+  c9e21aee2a598df0 48
+server-go/README.md
+  c9e21aee2a598df0 208-209,342-356
+server-go/cmd/server/main.go
+  41d4da1b830bf622 14,316,319-325,329-333,335,338
+  c9e21aee2a598df0 509-514
+server-go/scripts/register-users.sh
+  d3007d47d161e0b8 1-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "5b621a3ce74d806b73326aed3bcda892c2cbab54",
+  "prompts": {
+    "00f2cad1ecf97396": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d86cd-12a9-76a1-b4e7-bb175a21c012",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 131,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/eb63e942293786aac62d23fb7393c01aa3d8aafb9205b6df40b4e38e9be4ac1b"
+    },
+    "05c1d4d383b85b3f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8775-4ce5-7cb2-85bc-2504ea2acff1",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 347,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/53bc3be644454905392ca340ade2d9f46d5edec8926049432e82598f940bba75"
+    },
+    "41d4da1b830bf622": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8e7d9ba8-75d1-4d6e-b254-567aff8db0f1",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 1,
+      "accepted_lines": 17,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/90529f100e69665f6660e29871f1f58687630818c7b1c5a4cfd8569075e1c04a"
+    },
+    "c9e21aee2a598df0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db44dc45-7602-411c-b128-8207bd928e94",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 48,
+      "total_deletions": 4,
+      "accepted_lines": 48,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/dc656f54b9a0ace330d6b9a9a2f7d9221ead3c020fa79830a7822bf7bc92dee4"
+    },
+    "d3007d47d161e0b8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d874d-5499-7343-ba9c-71ee6b6dde16",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 224,
+      "total_deletions": 40,
+      "accepted_lines": 184,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/6d28824fa681ba2da96018543f614c449fde951f944a60e859960e7d98409d42"
+    }
+  }
+}
