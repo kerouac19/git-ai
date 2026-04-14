@@ -1,0 +1,38 @@
+docs/cli-manual.md
+  f59645136d03ede2 1,449-450,633-634,729,823,825,853-855
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "a3ad812dddb39a3fdc4be9f1a7df4d3986f0bf5a",
+  "prompts": {
+    "3f5d8d9073de3d79": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019d8b50-3790-7750-b33e-d181fa06382f",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1570,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/75b6c299236e5fa1c63c9267ad00447d5c270dd3e7d05da1d1b6166568d96739"
+    },
+    "f59645136d03ede2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a471479-5332-4b61-a8b7-4ea0e812ab37",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 8,
+      "accepted_lines": 11,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/3632dd642c6d91dc17f1d1a23defb998c95dd5265fbf68b6e29b794d4420549e"
+    }
+  }
+}
