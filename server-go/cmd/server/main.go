@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"git-ai-server/internal/auth"
 	"git-ai-server/internal/config"
@@ -312,14 +313,29 @@ func handleDeviceFlowPage(svc *auth.DeviceFlowService) gin.HandlerFunc {
 			return
 		}
 
+		// Use logged-in user's info if available, otherwise fall back to device code subject
 		subjectName := ""
 		subjectEmail := ""
-		if entry.Subject != nil {
+		if accessToken := auth.ExtractAccessTokenFromCookie(c.GetHeader("Cookie")); accessToken != "" {
+			if claims, err := svc.DecodeAccessToken(accessToken); err == nil && claims.Subject != "" {
+				subjectName = claims.Name
+				subjectEmail = claims.Email
+			}
+		}
+		if subjectName == "" && entry.Subject != nil {
 			subjectName = entry.Subject.Name
 			subjectEmail = entry.Subject.Email
 		}
+
+		// Format expiry time
+		expiresAtStr := ""
+		if entry.ExpiresAt > 0 {
+			expiresAtStr = time.UnixMilli(entry.ExpiresAt).Format("2006-01-02 15:04:05 MST")
+		}
+
 		data := deviceFlowPageData{
 			UserCode:     entry.UserCode,
+			ExpiresAt:    expiresAtStr,
 			Status:       entry.Status,
 			SubjectName:  subjectName,
 			SubjectEmail: subjectEmail,
@@ -490,10 +506,12 @@ func buildDashboardPageData(claims *auth.Claims, dashboard map[string]interface{
 		data.ActivePromptCount = toInt(activity["activePromptCount"])
 		data.CheckpointFileCount = toInt(activity["checkpointFileCount"])
 	}
-	if ms, ok := dashboard["metricsSummary"].(map[string]interface{}); ok {
-		data.EventCount7d = toInt(ms["eventCount7d"])
-		data.RepoCount7d = toInt(ms["repoCount7d"])
-		data.LastSyncAt = toString(ms["lastSyncAt"])
+	if ms, ok := dashboard["metricsSummary"].(*model.MetricsSummary); ok && ms != nil {
+		data.EventCount7d = ms.EventCount7d
+		data.RepoCount7d = ms.RepoCount7d
+		if ms.LastSyncAt != nil {
+			data.LastSyncAt = *ms.LastSyncAt
+		}
 	}
 	if today, ok := dashboard["today"].(map[string]interface{}); ok {
 		data.ActivityCount = toInt(today["activityCount"])

@@ -45,3 +45,4 @@ fuzz/corpus/
 # Worktrees
 .worktrees/
 .claude/worktrees/
+.factory

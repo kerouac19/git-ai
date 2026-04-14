@@ -205,6 +205,8 @@ curl http://127.0.0.1:3000/api/health/database
 | `DEFAULT_USER_EMAIL` | 否 | `git-ai@example.local` | 默认用户邮箱 |
 | `DEFAULT_USER_NAME` | 否 | `Git AI User` | 默认用户名 |
 | `DEFAULT_USER_ROLE` | 否 | `user` | 默认角色 |
+| `INITIAL_ADMIN_USERNAME` | 否 | `admin` | 首次启动且用户表为空时创建的管理员用户名 |
+| `INITIAL_ADMIN_PASSWORD` | 否 | 空 | 首次启动且用户表为空时创建管理员；为空则跳过 |
 
 ## API 端点
 
@@ -335,6 +337,23 @@ bash scripts/smoke-test.sh http://127.0.0.1:3000
 export GIT_AI_API_BASE_URL=http://127.0.0.1:3000
 git-ai login          # Device Flow 登录
 git-ai checkpoint ... # 触发 CAS + Metrics 上传
+```
+
+### 批量注册用户
+
+`/api/user/register` 需要 admin JWT。先用 `INITIAL_ADMIN_USERNAME` / `INITIAL_ADMIN_PASSWORD` 初始化管理员，或使用已有 admin 账号，然后准备 CSV：
+
+```csv
+username,password,email,display_name
+alice,change-me-123,alice@example.com,Alice
+bob,change-me-456,bob@example.com,Bob
+```
+
+执行：
+
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD='your-admin-password' \
+  server-go/scripts/register-users.sh users.csv http://127.0.0.1:3000
 ```
 
 ### 验证真实 `git-ai` 数据同步
