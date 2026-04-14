@@ -26,7 +26,7 @@
 
 ```bash
 cd server-go
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/server ./cmd/server
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/git-ai-server ./cmd/server
 ```
 
 ### 2. 准备数据库
@@ -42,7 +42,7 @@ psql -d postgres -c "CREATE DATABASE git_ai"
 ```bash
 sudo mkdir -p /opt/git-ai/server-go/current
 sudo mkdir -p /opt/git-ai/logs
-sudo cp bin/server /opt/git-ai/server-go/current/server
+sudo cp bin/git-ai-server /opt/git-ai/server-go/current/git-ai-server
 ```
 
 ### 4. 写入环境文件
@@ -73,7 +73,7 @@ cd /opt/git-ai/server-go/current
 set -a
 . /opt/git-ai/.env
 set +a
-./server
+./git-ai-server
 ```
 
 ### 6. 健康检查
@@ -97,7 +97,7 @@ Type=simple
 User=git-ai
 Group=git-ai
 WorkingDirectory=/opt/git-ai/server-go/current
-ExecStart=/opt/git-ai/server-go/current/server
+ExecStart=/opt/git-ai/server-go/current/git-ai-server
 EnvironmentFile=/opt/git-ai/.env
 Restart=always
 RestartSec=5
@@ -128,7 +128,7 @@ sudo systemctl status git-ai
 
 ```bash
 cd server-go
-go build -o bin/server ./cmd/server
+go build -o bin/git-ai-server ./cmd/server
 ```
 
 ### 2. 准备数据库
@@ -159,7 +159,7 @@ export CAS_ENCRYPTION_KEY=<长随机字符串>
 ### 4. 启动
 
 ```bash
-./bin/server
+./bin/git-ai-server
 ```
 
 输出示例：

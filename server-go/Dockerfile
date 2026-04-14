@@ -3,10 +3,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o git-ai-server ./cmd/server
 
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
-COPY --from=build /app/server .
+COPY --from=build /app/git-ai-server .
 EXPOSE 3000
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/git-ai-server"]

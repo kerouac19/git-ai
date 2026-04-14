@@ -10,8 +10,8 @@ Group=git-ai
 
 WorkingDirectory=/opt/git-ai/server-go/current
 EnvironmentFile=/opt/git-ai/.env
-ExecStart=/opt/git-ai/server-go/current/server
-ExecStartPre=/usr/bin/test -x /opt/git-ai/server-go/current/server
+ExecStart=/opt/git-ai/server-go/current/git-ai-server
+ExecStartPre=/usr/bin/test -x /opt/git-ai/server-go/current/git-ai-server
 ExecStartPre=/usr/bin/test -f /opt/git-ai/.env
 
 Restart=always

@@ -50,13 +50,13 @@ openssl rand -base64 48
 
 ```bash
 cd server-go
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/server ./cmd/server
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/git-ai-server ./cmd/server
 ```
 
 交叉编译（ARM64 / Apple Silicon）：
 
 ```bash
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/server-arm64 ./cmd/server
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/git-ai-server-arm64 ./cmd/server
 ```
 
 ### 3.2 Ubuntu 裸机快速路径
@@ -73,7 +73,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/server-ar
 ```bash
 # 1. 构建
 cd server-go
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/server ./cmd/server
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/git-ai-server ./cmd/server
 
 # 2. 准备数据库
 psql -d postgres -c "CREATE DATABASE git_ai"
@@ -81,7 +81,7 @@ psql -d postgres -c "CREATE DATABASE git_ai"
 # 3. 准备目录
 sudo mkdir -p /opt/git-ai/server-go/current
 sudo mkdir -p /opt/git-ai/logs
-sudo cp bin/server /opt/git-ai/server-go/current/server
+sudo cp bin/git-ai-server /opt/git-ai/server-go/current/git-ai-server
 
 # 4. 生成密钥（分别写入 /opt/git-ai/.env）
 openssl rand -base64 48
@@ -115,7 +115,7 @@ cd /opt/git-ai/server-go/current
 set -a
 . /opt/git-ai/.env
 set +a
-./server
+./git-ai-server
 
 curl http://127.0.0.1:3000/health
 curl http://127.0.0.1:3000/api/health/database
@@ -277,7 +277,7 @@ docker compose logs -f server
 
 ```bash
 # 1. 复制二进制到服务器
-scp bin/server user@prod-server:/opt/git-ai/
+scp bin/git-ai-server user@prod-server:/opt/git-ai/
 
 # 2. 创建 systemd service
 cat > /etc/systemd/system/git-ai.service <<EOF
@@ -290,7 +290,7 @@ Type=simple
 User=git-ai
 Group=git-ai
 WorkingDirectory=/opt/git-ai
-ExecStart=/opt/git-ai/server
+ExecStart=/opt/git-ai/git-ai-server
 EnvironmentFile=/opt/git-ai/.env
 Restart=always
 RestartSec=5
@@ -487,7 +487,7 @@ Go 服务日志输出到 stdout/stderr，GIN 框架自动记录每个请求的�
 
 ```bash
 # 重定向到文件
-./server >> /var/log/git-ai/server.log 2>&1
+./git-ai-server >> /var/log/git-ai/server.log 2>&1
 
 # 或配合 journald（systemd）
 journalctl -u git-ai -f
