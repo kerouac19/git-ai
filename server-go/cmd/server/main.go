@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,7 +11,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"git-ai-server/internal/auth"
@@ -211,9 +214,30 @@ func main() {
 	log.Printf("Database target: %s", cfg.DescribeDatabaseTarget())
 	log.Printf("Trust proxy: %v", cfg.TrustProxy())
 
-	if err := r.Run(fmt.Sprintf(":%d", port)); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: r,
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	log.Printf("Received signal %v, shutting down gracefully...", sig)
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited gracefully")
 }
 
 func corsMiddleware(origin string) gin.HandlerFunc {
