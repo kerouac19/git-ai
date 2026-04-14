@@ -212,23 +212,22 @@ func (s *DeviceFlowService) ApproveDeviceCode(ctx context.Context, userCode stri
 	}
 
 	if entry.Status != "approved" {
-		_, err = s.Pool.Exec(ctx, `
+		// Only approve if subject data has been set (via UpdateDeviceCodeSubject)
+		if subject == nil {
+			return nil, fmt.Errorf("cannot approve device code: user data not yet associated (userCode=%s)", userCode)
+		}
+
+		tag, err := s.Pool.Exec(ctx, `
 			UPDATE public.oauth_device_codes
 			SET status = 'approved', approved_at = now()
-			WHERE user_code = $1`, userCode)
+			WHERE user_code = $1 AND subject_json IS NOT NULL AND user_id IS NOT NULL`, userCode)
 		if err != nil {
 			return nil, fmt.Errorf("approving device code: %w", err)
 		}
+		if tag.RowsAffected() == 0 {
+			return nil, fmt.Errorf("cannot approve device code: user data missing in database (userCode=%s)", userCode)
+		}
 		status = "approved"
-
-		// Re-fetch the entry to get the updated subject (in case UpdateDeviceCodeSubject was called before)
-		entry, err = s.findDeviceCodeByUserCode(ctx, userCode)
-		if err != nil {
-			return nil, err
-		}
-		if entry != nil {
-			subject = s.parseStoredSubject(entry.SubjectJSON)
-		}
 	}
 
 	return &DeviceCodeInfo{
