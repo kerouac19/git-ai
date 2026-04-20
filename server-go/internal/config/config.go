@@ -41,6 +41,8 @@ type Config struct {
 	RawDatabaseURL          string `mapstructure:"DATABASE_URL"`
 	DBSSL                   bool   `mapstructure:"DB_SSL"`
 	DBSSLRejectUnauthorized bool   `mapstructure:"DB_SSL_REJECT_UNAUTHORIZED"`
+	ReleaseStoragePath      string `mapstructure:"RELEASE_STORAGE_PATH"`
+	ReleaseUploadToken      string `mapstructure:"RELEASE_UPLOAD_TOKEN"`
 }
 
 // TrustProxy parses the TRUST_PROXY value. It returns:
@@ -149,6 +151,8 @@ func Load() (*Config, error) {
 	v.SetDefault("DATABASE_URL", "")
 	v.SetDefault("DB_SSL", false)
 	v.SetDefault("DB_SSL_REJECT_UNAUTHORIZED", false)
+	v.SetDefault("RELEASE_STORAGE_PATH", "/opt/git-ai/releases")
+	v.SetDefault("RELEASE_UPLOAD_TOKEN", "")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

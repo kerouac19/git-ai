@@ -108,7 +108,10 @@ func main() {
 	bundleH := &handler.BundleHandler{Svc: bundleSvc}
 	casH := &handler.CasHandler{Svc: casSvc}
 	dashboardH := &handler.DashboardHandler{Svc: dashboardSvc}
-	releaseH := &handler.ReleaseHandler{}
+	releaseStore := &service.ReleaseStore{Root: cfg.ReleaseStoragePath}
+	releaseH := &handler.ReleaseHandler{Store: releaseStore}
+	releaseAdminH := &handler.ReleaseAdminHandler{Store: releaseStore}
+	uploadAuth := middleware.UploadTokenAuth(cfg.ReleaseUploadToken)
 	sysConfigH := &handler.SysConfigHandler{Svc: sysConfigSvc}
 
 	r := gin.Default()
@@ -169,6 +172,11 @@ func main() {
 		api.POST("/user/logout", loginH.Logout)
 		api.POST("/user/register", jwtMW, adminOnly(), loginH.Register)
 		api.POST("/bundles", bundleH.Create)
+
+		// Release admin (upload Bearer token auth)
+		api.PUT("/releases/:channel/artifacts/:tag/:name", uploadAuth, releaseAdminH.PutArtifact)
+		api.PUT("/releases/:channel/current.json", uploadAuth, releaseAdminH.PutCurrent)
+		api.GET("/releases/:channel/current.json", uploadAuth, releaseAdminH.GetCurrent)
 
 		// Authorship
 		authorship := api.Group("/authorship")

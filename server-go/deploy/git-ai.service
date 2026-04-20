@@ -34,7 +34,7 @@ ProtectHome=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
-ReadWritePaths=/opt/git-ai/logs
+ReadWritePaths=/opt/git-ai/logs /opt/git-ai/releases
 
 [Install]
 WantedBy=multi-user.target
