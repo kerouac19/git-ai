@@ -1,0 +1,22 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "74f8473413f0ea8cb50ad400653048146d126b25",
+  "prompts": {
+    "a51a739977301f10": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019da992-4788-73b1-af0d-8664b3484eed",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 9038,
+      "accepted_lines": 0,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/602b8d9760b71bc582071b3d11a98607fb209b54484da802a43bafb9863ae804"
+    }
+  }
+}
