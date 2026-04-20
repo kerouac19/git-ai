@@ -1,0 +1,50 @@
+server-go/internal/config/config.go
+  382affd93f134b9b 44-45,154-155
+server-go/internal/middleware/upload_token.go
+  382affd93f134b9b 1-34
+server-go/internal/service/release_store.go
+  382affd93f134b9b 1-443
+server-go/internal/service/release_store_test.go
+  382affd93f134b9b 1-252
+server-go/docs/production-deployment.md
+  382affd93f134b9b 29-30,86-87,176-182,314,387-499,534-547
+server-go/internal/handler/releases_test.go
+  382affd93f134b9b 1-219
+server-go/docs/releases-upgrade-plan-review.md
+  382affd93f134b9b 1-289
+server-go/docs/organization-model-current-state.md
+  382affd93f134b9b 1-173
+server-go/internal/handler/release_admin.go
+  382affd93f134b9b 1-123
+server-go/deploy/git-ai.service
+  382affd93f134b9b 37
+server-go/docs/releases-upgrade-plan.md
+  382affd93f134b9b 1-581
+server-go/scripts/sync-releases.sh
+  382affd93f134b9b 1-93
+server-go/cmd/server/main.go
+  382affd93f134b9b 111-114,176-179
+server-go/internal/handler/releases.go
+  382affd93f134b9b 4-6,8-9,14-16,18-21,23-25,28-46,52-54,57-59,63,65,68-79,81,83,85-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "0a138e3ee05559c2ff89a7014782a9f2d67d826f",
+  "prompts": {
+    "382affd93f134b9b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019daa6f-faf8-72a2-badd-528890f64180",
+        "model": "gpt-5.4"
+      },
+      "human_author": "kerouac19",
+      "messages": [],
+      "total_additions": 2427,
+      "total_deletions": 62,
+      "accepted_lines": 2427,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.tongbaninfo.com/cas/36cf42d37a058d1d17831a81cc35118d611ef58260c57dff0f2dd3f8917c9aff"
+    }
+  }
+}
