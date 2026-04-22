@@ -21,6 +21,10 @@ func (h *AuthorshipHandler) SaveRecord(c *gin.Context) {
 		return
 	}
 
+	if !requireSelfOrAdmin(c, dto.UserID) {
+		return
+	}
+
 	rec, err := h.Svc.SaveRecord(c.Request.Context(), dto)
 	if err != nil {
 		Internal(c, err)
@@ -56,6 +60,9 @@ func (h *AuthorshipHandler) SaveCommitAttribution(c *gin.Context) {
 
 func (h *AuthorshipHandler) GetUserCommits(c *gin.Context) {
 	userID := c.Param("userId")
+	if !requireSelfOrAdmin(c, userID) {
+		return
+	}
 
 	limit := parsePaginationValue(c.Query("limit"), 50)
 	offset := parsePaginationValue(c.Query("offset"), 0)
@@ -77,6 +84,9 @@ func (h *AuthorshipHandler) GetUserCommits(c *gin.Context) {
 
 func (h *AuthorshipHandler) GetUserCommitByHash(c *gin.Context) {
 	userID := c.Param("userId")
+	if !requireSelfOrAdmin(c, userID) {
+		return
+	}
 	commitHash := c.Param("commitHash")
 
 	records, err := h.Svc.FindByCommitHash(c.Request.Context(), commitHash)
@@ -99,6 +109,17 @@ func (h *AuthorshipHandler) GetUserCommitByHash(c *gin.Context) {
 }
 
 func (h *AuthorshipHandler) GetCommitAttribution(c *gin.Context) {
+	// commit_attributions rows are keyed by commit hash and carry the git
+	// author (often an email) rather than a user_id, so we can't cheaply
+	// tie a row to the authenticated principal. For the P1 patch we lock
+	// the endpoint to admins; widen access once we model per-user
+	// ownership explicitly.
+	_, role, ok := userSubjectAndRole(c)
+	if !ok || role != "admin" {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
 	commitHash := c.Param("commitHash")
 
 	attr, err := h.Svc.FindCommitAttributionByHash(c.Request.Context(), commitHash)
@@ -120,6 +141,9 @@ func (h *AuthorshipHandler) GetCommitAttribution(c *gin.Context) {
 
 func (h *AuthorshipHandler) SyncAuthorship(c *gin.Context) {
 	userID := c.Param("userId")
+	if !requireSelfOrAdmin(c, userID) {
+		return
+	}
 
 	var dto model.AuthorshipRecordDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {

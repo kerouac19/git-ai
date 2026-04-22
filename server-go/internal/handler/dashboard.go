@@ -28,13 +28,16 @@ func (h *DashboardHandler) GetPublicStats(c *gin.Context) {
 }
 
 func (h *DashboardHandler) GetStats(c *gin.Context) {
-	userID := c.Query("userId")
-	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+	// Ignore ?userId=; the dashboard belongs to the authenticated caller.
+	// Admin cross-tenant inspection is a separate endpoint we haven't
+	// designed yet — don't let query parameters widen the scope.
+	subject, _, ok := userSubjectAndRole(c)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
 		return
 	}
 
-	stats, err := h.Svc.GetDashboardStats(c.Request.Context(), userID)
+	stats, err := h.Svc.GetDashboardStats(c.Request.Context(), subject)
 	if err != nil {
 		Internal(c, err)
 		return

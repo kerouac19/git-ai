@@ -181,7 +181,7 @@ func main() {
 		api.GET("/user/logout", loginH.Logout)
 		api.POST("/user/logout", loginH.Logout)
 		api.POST("/user/register", jsonLimit, jwtMW, adminOnly(), loginH.Register)
-		api.POST("/bundles", jsonLimit, bundleH.Create)
+		api.POST("/bundles", jsonLimit, jwtMW, bundleH.Create)
 
 		// Release admin (upload Bearer token auth). These routes set their
 		// own limit via http.MaxBytesReader in the handler, so no jsonLimit
@@ -190,31 +190,38 @@ func main() {
 		api.PUT("/releases/:channel/current.json", uploadAuth, releaseAdminH.PutCurrent)
 		api.GET("/releases/:channel/current.json", uploadAuth, releaseAdminH.GetCurrent)
 
-		// Authorship
-		authorship := api.Group("/authorship", jsonLimit)
+		// Authorship. Writes go through workerMW so CLI tokens and X-API-Key
+		// credentials both work; reads go through jwtMW since the /me
+		// browser session is the only expected reader.
+		authorshipWrite := api.Group("/authorship", jsonLimit, workerMW)
 		{
-			authorship.POST("/record", authorshipH.SaveRecord)
-			authorship.POST("/commit", authorshipH.SaveCommitAttribution)
-			authorship.GET("/commits/:userId", authorshipH.GetUserCommits)
-			authorship.GET("/commits/:userId/:commitHash", authorshipH.GetUserCommitByHash)
-			authorship.GET("/commit/:commitHash", authorshipH.GetCommitAttribution)
-			authorship.PUT("/sync/:userId", authorshipH.SyncAuthorship)
+			authorshipWrite.POST("/record", authorshipH.SaveRecord)
+			authorshipWrite.POST("/commit", authorshipH.SaveCommitAttribution)
+			authorshipWrite.PUT("/sync/:userId", authorshipH.SyncAuthorship)
+		}
+		authorshipRead := api.Group("/authorship", jsonLimit, jwtMW)
+		{
+			authorshipRead.GET("/commits/:userId", authorshipH.GetUserCommits)
+			authorshipRead.GET("/commits/:userId/:commitHash", authorshipH.GetUserCommitByHash)
+			authorshipRead.GET("/commit/:commitHash", authorshipH.GetCommitAttribution)
 		}
 
 		// CAS — gets the larger casLimit since payloads can be bigger than
-		// the generic 2MB JSON budget.
-		cas := api.Group("/cas", casLimit)
+		// the generic 2MB JSON budget. Worker auth accepts either a CLI JWT
+		// or an X-API-Key.
+		cas := api.Group("/cas", casLimit, workerMW)
 		{
 			cas.POST("/upload", casH.Upload)
 			cas.GET("/read/:hash", casH.Read)
 		}
 
-		// Dashboard
+		// Dashboard. Public stats stay open; per-user stats require a
+		// session and always map to the caller's own sub.
 		dashboard := api.Group("/dashboard", jsonLimit)
 		{
 			dashboard.GET("/public", dashboardH.GetPublicStats)
-			dashboard.GET("/stats", dashboardH.GetStats)
-			dashboard.POST("/generate-report", dashboardH.GenerateReport)
+			dashboard.GET("/stats", jwtMW, dashboardH.GetStats)
+			dashboard.POST("/generate-report", jwtMW, dashboardH.GenerateReport)
 		}
 
 		// Config (JWT protected)

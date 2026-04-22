@@ -273,9 +273,16 @@ BODY=$(cat /tmp/smoke_body)
 assert_status "GET /worker/cas/checkout?hash=..." 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 
-# Upload via /api/cas/upload
+# /api/cas/* requires worker auth (JWT or X-API-Key). Confirm 401 first.
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
+  -d '{"content":"unauthenticated","contentType":"text/plain"}' \
+  "$BASE_URL/api/cas/upload")
+assert_status "POST /api/cas/upload (no auth) → 401" 401 "$STATUS"
+
+# Upload via /api/cas/upload with auth
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"content":"test plain text content","contentType":"text/plain"}' \
   "$BASE_URL/api/cas/upload")
 BODY=$(cat /tmp/smoke_body)
@@ -283,8 +290,8 @@ assert_status "POST /api/cas/upload" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 API_CAS_HASH=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['hash'])")
 
-# Read back via /api/cas/read/:hash
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/cas/read/$API_CAS_HASH")
+# Read back via /api/cas/read/:hash (auth required)
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" "$BASE_URL/api/cas/read/$API_CAS_HASH")
 BODY=$(cat /tmp/smoke_body)
 assert_status "GET /api/cas/read/:hash" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
@@ -333,9 +340,13 @@ token += '=' * (4 - len(token) % 4)
 print(json.loads(base64.b64decode(token))['sub'])
 ")
 
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/dashboard/stats?userId=$USER_ID")
+# Dashboard stats require auth; query ?userId= is ignored server-side.
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/dashboard/stats")
+assert_status "GET /api/dashboard/stats (no auth) → 401" 401 "$STATUS"
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" "$BASE_URL/api/dashboard/stats")
 BODY=$(cat /tmp/smoke_body)
-assert_status "GET /api/dashboard/stats" 200 "$STATUS"
+assert_status "GET /api/dashboard/stats (with token)" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/dashboard/public")
@@ -350,9 +361,24 @@ bold "⑦ Authorship CRUD"
 echo ""
 # ═══════════════════════════════════════════
 
-# Save record
+# Without auth → 401
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
+  -d "{\"userId\":\"$USER_ID\",\"gitCommitHash\":\"abc123def456\"}" \
+  "$BASE_URL/api/authorship/record")
+assert_status "POST /api/authorship/record (no auth) → 401" 401 "$STATUS"
+
+# Write to someone else's userId → 403 (non-admin token)
+OTHER_USER_ID="00000000-0000-0000-0000-000000009999"
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+  -d "{\"userId\":\"$OTHER_USER_ID\",\"gitCommitHash\":\"abc123def456\",\"fileAttributions\":[],\"aiAttributionPercentage\":0}" \
+  "$BASE_URL/api/authorship/record")
+assert_status "POST /api/authorship/record (cross-user) → 403" 403 "$STATUS"
+
+# Save record for self
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d "{\"userId\":\"$USER_ID\",\"gitCommitHash\":\"abc123def456\",\"fileAttributions\":[{\"file\":\"main.rs\",\"ai\":0.8}],\"aiAttributionPercentage\":80.0}" \
   "$BASE_URL/api/authorship/record")
 BODY=$(cat /tmp/smoke_body)
@@ -360,31 +386,38 @@ assert_status "POST /api/authorship/record" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 assert_json_exists "  recordId present" "$BODY" "['recordId']"
 
-# Save commit attribution
+# Save commit attribution (auth required but no sub-check)
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
-  -H "Content-Type: application/json" \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d '{"commitHash":"abc123def456","author":"test-user","fileChanges":{"main.rs":"+50 -10"},"aiContributionMetrics":{"aiLineCount":42,"totalLineCount":100,"aiPercentage":42,"tokensUsed":1500}}' \
   "$BASE_URL/api/authorship/commit")
 BODY=$(cat /tmp/smoke_body)
 assert_status "POST /api/authorship/commit" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 
-# Get user commits
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/authorship/commits/$USER_ID")
+# Read other user's commits → 403
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" \
+  "$BASE_URL/api/authorship/commits/$OTHER_USER_ID")
+assert_status "GET /api/authorship/commits/:otherId → 403" 403 "$STATUS"
+
+# Read own commits
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" \
+  "$BASE_URL/api/authorship/commits/$USER_ID")
 BODY=$(cat /tmp/smoke_body)
 assert_status "GET /api/authorship/commits/:userId" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 assert_json_field "  total=1" "$BODY" "['total']" "1"
 
-# Get commit attribution by hash
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/authorship/commit/abc123def456")
-BODY=$(cat /tmp/smoke_body)
-assert_status "GET /api/authorship/commit/:hash" 200 "$STATUS"
-assert_json_field "  success=True" "$BODY" "['success']" "True"
+# Commit attribution by hash — admin-only for the P1 patch (data isn't
+# user-scoped by user_id, so we lock it to admins until we model
+# ownership properly).
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" \
+  "$BASE_URL/api/authorship/commit/abc123def456")
+assert_status "GET /api/authorship/commit/:hash (non-admin) → 403" 403 "$STATUS"
 
-# Sync (upsert)
+# Sync (upsert) — self-scoped
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X PUT \
-  -H "Content-Type: application/json" \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d "{\"userId\":\"$USER_ID\",\"gitCommitHash\":\"abc123def456\",\"fileAttributions\":[{\"file\":\"main.rs\",\"ai\":0.95}],\"aiAttributionPercentage\":95.0}" \
   "$BASE_URL/api/authorship/sync/$USER_ID")
 BODY=$(cat /tmp/smoke_body)
@@ -498,9 +531,25 @@ STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   "$BASE_URL/worker/metrics/upload")
 assert_status "POST metrics (bad version) → 400" 400 "$STATUS"
 
-# CAS: read non-existent hash
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/cas/read/nonexistent")
+# CAS: read non-existent hash (auth required)
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" \
+  "$BASE_URL/api/cas/read/nonexistent")
 assert_status "GET /api/cas/read/nonexistent → 404" 404 "$STATUS"
+
+# Bundles: auth required
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"title":"smoke","data":{"prompts":{"p1":{}}}}' \
+  "$BASE_URL/api/bundles")
+assert_status "POST /api/bundles (no auth) → 401" 401 "$STATUS"
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+  -d '{"title":"smoke","data":{"prompts":{"p1":{}}}}' \
+  "$BASE_URL/api/bundles")
+BODY=$(cat /tmp/smoke_body)
+assert_status "POST /api/bundles (with auth)" 200 "$STATUS"
+assert_json_field "  success=True" "$BODY" "['success']" "True"
 
 # Config: delete non-existent
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X DELETE \
