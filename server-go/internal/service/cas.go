@@ -8,12 +8,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	gitcrypto "git-ai-server/internal/crypto"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -199,8 +201,11 @@ func (s *CasService) ReadContent(ctx context.Context, hash string) (*CasReadResu
 	err := s.Pool.QueryRow(ctx,
 		`SELECT encrypted_content, content_type FROM cas_entries WHERE hash = $1`, hash,
 	).Scan(&encrypted, &ct)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil, nil // not found
+		return nil, fmt.Errorf("querying cas entry: %w", err)
 	}
 
 	decrypted, err := gitcrypto.DecryptCAS(encrypted, s.CASKey)

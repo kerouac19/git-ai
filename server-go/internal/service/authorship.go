@@ -74,7 +74,7 @@ func (s *AuthorshipService) FindByUserID(ctx context.Context, userID string) ([]
 	rows, err := s.Pool.Query(ctx, `
 		SELECT id, user_id, git_commit_hash, file_attributions, created_at, updated_at, ai_attribution_percentage
 		FROM authorship_records
-		WHERE user_id LIKE '%' || $1 || '%'
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`, userID)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *AuthorshipService) FindByCommitHash(ctx context.Context, commitHash str
 	rows, err := s.Pool.Query(ctx, `
 		SELECT id, user_id, git_commit_hash, file_attributions, created_at, updated_at, ai_attribution_percentage
 		FROM authorship_records
-		WHERE git_commit_hash LIKE '%' || $1 || '%'
+		WHERE git_commit_hash = $1
 		ORDER BY created_at DESC
 	`, commitHash)
 	if err != nil {

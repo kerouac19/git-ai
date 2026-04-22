@@ -103,8 +103,6 @@ func (s *DeviceFlowService) ExchangeDeviceCode(ctx context.Context, deviceCode s
 		return oauthError("expired_token", "Device code expired or not found"), nil
 	}
 
-	now := time.Now()
-
 	if entry.Status == "denied" {
 		return oauthError("access_denied", "Device authorization was denied"), nil
 	}
@@ -114,7 +112,6 @@ func (s *DeviceFlowService) ExchangeDeviceCode(ctx context.Context, deviceCode s
 		if subject == nil {
 			return oauthError("server_error", "Device code approved but no user data found"), nil
 		}
-		fmt.Printf("[DEBUG] ExchangeDeviceCode: parsed subject from DB: sub=%s, email=%s, name=%s\n", subject.Sub, subject.Email, subject.Name)
 
 		if err := s.deleteDeviceCode(ctx, deviceCode); err != nil {
 			return nil, err
@@ -122,13 +119,13 @@ func (s *DeviceFlowService) ExchangeDeviceCode(ctx context.Context, deviceCode s
 		return s.issueTokenResponse(*subject)
 	}
 
-	if entry.LastPolledAt != nil &&
-		now.Sub(*entry.LastPolledAt) < time.Duration(deviceCodePollIntervalSecs)*time.Second {
-		_ = s.touchDeviceCodePoll(ctx, deviceCode, now)
+	claimed, err := s.claimPollSlot(ctx, deviceCode)
+	if err != nil {
+		return nil, err
+	}
+	if !claimed {
 		return oauthError("slow_down", "Polling too frequently"), nil
 	}
-
-	_ = s.touchDeviceCodePoll(ctx, deviceCode, now)
 	return oauthError("authorization_pending", "Device authorization is still pending"), nil
 }
 
@@ -279,15 +276,6 @@ func (s *DeviceFlowService) UpdateDeviceCodeSubject(ctx context.Context, userCod
 		return fmt.Errorf("marshaling subject: %w", err)
 	}
 
-	// First check if the device code exists and what its status is
-	var currentStatus string
-	err = s.Pool.QueryRow(ctx, `
-		SELECT status FROM public.oauth_device_codes
-		WHERE user_code = $1`, userCode).Scan(&currentStatus)
-	if err != nil {
-		return fmt.Errorf("checking device code status: %w (userCode=%s)", err, userCode)
-	}
-
 	tag, err := s.Pool.Exec(ctx, `
 		UPDATE public.oauth_device_codes
 		SET subject_json = $1::jsonb, user_id = $2
@@ -297,7 +285,7 @@ func (s *DeviceFlowService) UpdateDeviceCodeSubject(ctx context.Context, userCod
 		return fmt.Errorf("updating device code subject: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("device code not updated (userCode=%s, currentStatus=%s, expectedStatus=pending)", userCode, currentStatus)
+		return fmt.Errorf("device code not updated: not found or no longer pending")
 	}
 	return nil
 }
@@ -513,12 +501,21 @@ func scanDeviceCodeRecord(row pgx.Row) (*deviceCodeRecord, error) {
 	return &r, nil
 }
 
-func (s *DeviceFlowService) touchDeviceCodePoll(ctx context.Context, deviceCode string, ts time.Time) error {
-	_, err := s.Pool.Exec(ctx, `
+// claimPollSlot atomically advances last_polled_at if the previous attempt is
+// older than deviceCodePollIntervalSecs. Returns true when the caller owns the
+// slot for this interval; false means the client should be told slow_down.
+func (s *DeviceFlowService) claimPollSlot(ctx context.Context, deviceCode string) (bool, error) {
+	tag, err := s.Pool.Exec(ctx, `
 		UPDATE public.oauth_device_codes
-		SET last_polled_at = $1
-		WHERE device_code = $2`, ts, deviceCode)
-	return err
+		SET last_polled_at = now()
+		WHERE device_code = $1
+		  AND (last_polled_at IS NULL
+		       OR last_polled_at < now() - make_interval(secs => $2))
+	`, deviceCode, deviceCodePollIntervalSecs)
+	if err != nil {
+		return false, fmt.Errorf("claiming poll slot: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
 }
 
 func (s *DeviceFlowService) deleteDeviceCode(ctx context.Context, deviceCode string) error {
