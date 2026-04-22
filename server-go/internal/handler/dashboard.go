@@ -16,9 +16,7 @@ type DashboardHandler struct {
 func (h *DashboardHandler) GetPublicStats(c *gin.Context) {
 	stats, err := h.Svc.GetPublicStats(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get public statistics: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -38,9 +36,7 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 
 	stats, err := h.Svc.GetDashboardStats(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get dashboard statistics: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 

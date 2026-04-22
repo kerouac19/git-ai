@@ -29,9 +29,7 @@ func (h *CasHandler) Upload(c *gin.Context) {
 
 	hash, err := h.Svc.UploadContent(c.Request.Context(), body.Content, body.ContentType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to upload content: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -57,9 +55,7 @@ func (h *CasHandler) Read(c *gin.Context) {
 
 	result, err := h.Svc.ReadContent(c.Request.Context(), hash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to read content: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 

@@ -30,7 +30,7 @@ var sensitiveHeaderKeys = map[string]struct{}{
 	"x-auth-token":  {},
 }
 
-func AuditMiddleware(pool *pgxpool.Pool) gin.HandlerFunc {
+func AuditMiddleware(pool *pgxpool.Pool, trustProxy bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
@@ -58,7 +58,7 @@ func AuditMiddleware(pool *pgxpool.Pool) gin.HandlerFunc {
 
 		action := fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path)
 		resource := c.Request.URL.Path
-		ip := clientIP(c)
+		ip := ClientIPFromGin(c, trustProxy)
 		userAgent := c.Request.Header.Get("User-Agent")
 		success := status < 400
 		details := fmt.Sprintf("Duration: %dms, Status: %d", duration.Milliseconds(), status)
@@ -139,12 +139,3 @@ func safeHeaders(c *gin.Context) map[string]string {
 	return safe
 }
 
-func clientIP(c *gin.Context) string {
-	if forwarded := c.GetHeader("X-Forwarded-For"); forwarded != "" {
-		return strings.SplitN(forwarded, ",", 2)[0]
-	}
-	if realIP := c.GetHeader("X-Real-Ip"); realIP != "" {
-		return realIP
-	}
-	return c.ClientIP()
-}

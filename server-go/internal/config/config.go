@@ -43,6 +43,67 @@ type Config struct {
 	DBSSLRejectUnauthorized bool   `mapstructure:"DB_SSL_REJECT_UNAUTHORIZED"`
 	ReleaseStoragePath      string `mapstructure:"RELEASE_STORAGE_PATH"`
 	ReleaseUploadToken      string `mapstructure:"RELEASE_UPLOAD_TOKEN"`
+	CASUploadLimit          string `mapstructure:"CAS_UPLOAD_LIMIT"`
+}
+
+const (
+	defaultJSONBodyLimit   int64 = 2 * 1024 * 1024
+	defaultCASUploadLimit  int64 = 10 * 1024 * 1024
+)
+
+// parseBytes accepts "2mb" / "500kb" / "1gb" / raw bytes like "2097152".
+// Returns fallback when the input is empty, malformed, or non-positive.
+func parseBytes(raw string, fallback int64) int64 {
+	s := strings.TrimSpace(strings.ToLower(raw))
+	if s == "" {
+		return fallback
+	}
+
+	unit := int64(1)
+	switch {
+	case strings.HasSuffix(s, "gb"):
+		unit, s = 1024*1024*1024, strings.TrimSuffix(s, "gb")
+	case strings.HasSuffix(s, "mb"):
+		unit, s = 1024*1024, strings.TrimSuffix(s, "mb")
+	case strings.HasSuffix(s, "kb"):
+		unit, s = 1024, strings.TrimSuffix(s, "kb")
+	case strings.HasSuffix(s, "b"):
+		s = strings.TrimSuffix(s, "b")
+	}
+
+	n, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n * unit
+}
+
+// ParsedJSONBodyLimit returns JSON_BODY_LIMIT as bytes, defaulting to 2MB.
+func (c *Config) ParsedJSONBodyLimit() int64 {
+	return parseBytes(c.JSONBodyLimit, defaultJSONBodyLimit)
+}
+
+// ParsedCASUploadLimit returns CAS_UPLOAD_LIMIT as bytes, defaulting to 10MB.
+// CAS payloads are expected to be larger than generic JSON, so they get their
+// own knob.
+func (c *Config) ParsedCASUploadLimit() int64 {
+	return parseBytes(c.CASUploadLimit, defaultCASUploadLimit)
+}
+
+// TrustProxyEnabled reports whether TRUST_PROXY resolves to a truthy value
+// (any setting other than the explicit false). Downstream middleware uses
+// this to decide whether X-Forwarded-* headers may be trusted.
+func (c *Config) TrustProxyEnabled() bool {
+	switch v := c.TrustProxy().(type) {
+	case bool:
+		return v
+	case int:
+		return v > 0
+	case string:
+		return v != ""
+	default:
+		return false
+	}
 }
 
 // TrustProxy parses the TRUST_PROXY value. It returns:
@@ -153,6 +214,7 @@ func Load() (*Config, error) {
 	v.SetDefault("DB_SSL_REJECT_UNAUTHORIZED", false)
 	v.SetDefault("RELEASE_STORAGE_PATH", "/opt/git-ai/releases")
 	v.SetDefault("RELEASE_UPLOAD_TOKEN", "")
+	v.SetDefault("CAS_UPLOAD_LIMIT", "10mb")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

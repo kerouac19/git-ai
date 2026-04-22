@@ -23,9 +23,7 @@ func (h *AuthorshipHandler) SaveRecord(c *gin.Context) {
 
 	rec, err := h.Svc.SaveRecord(c.Request.Context(), dto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to save authorship record: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -45,9 +43,7 @@ func (h *AuthorshipHandler) SaveCommitAttribution(c *gin.Context) {
 
 	attr, err := h.Svc.SaveCommitAttribution(c.Request.Context(), dto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to save commit attribution: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -66,9 +62,7 @@ func (h *AuthorshipHandler) GetUserCommits(c *gin.Context) {
 
 	records, total, err := h.Svc.FindAll(c.Request.Context(), userID, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve authorship records: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -87,9 +81,7 @@ func (h *AuthorshipHandler) GetUserCommitByHash(c *gin.Context) {
 
 	records, err := h.Svc.FindByCommitHash(c.Request.Context(), commitHash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve authorship records: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -111,9 +103,7 @@ func (h *AuthorshipHandler) GetCommitAttribution(c *gin.Context) {
 
 	attr, err := h.Svc.FindCommitAttributionByHash(c.Request.Context(), commitHash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to retrieve commit attribution: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
@@ -139,9 +129,7 @@ func (h *AuthorshipHandler) SyncAuthorship(c *gin.Context) {
 
 	rec, err := h.Svc.MergeAuthorshipData(c.Request.Context(), userID, dto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to sync authorship data: " + err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 

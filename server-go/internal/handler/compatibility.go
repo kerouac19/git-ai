@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 
 	"git-ai-server/internal/auth"
+	"git-ai-server/internal/middleware"
 	"git-ai-server/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +20,13 @@ type CompatibilityHandler struct {
 	CasSvc        *service.CasService
 	DeviceFlowSvc *auth.DeviceFlowService
 	MetricsSvc    *service.MetricsService
+	TrustProxy    bool
 }
 
 func (h *CompatibilityHandler) GetStatus(c *gin.Context) {
 	publicStats, err := h.DashboardSvc.GetPublicStats(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -62,13 +65,13 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 
 	dashboard, err := h.DashboardSvc.GetDashboardStats(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
 	records, total, err := h.AuthorshipSvc.FindAll(c.Request.Context(), userID, 10, 0)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -95,14 +98,12 @@ func (h *CompatibilityHandler) StartDeviceFlow(c *gin.Context) {
 	if c.Request.TLS != nil {
 		protocol = "https"
 	}
-	if fwdProto := c.GetHeader("X-Forwarded-Proto"); fwdProto != "" {
-		protocol = fwdProto
-	}
+	protocol = middleware.ForwardedProtoOrDefault(c.Request, h.TrustProxy, protocol)
 	baseURL := fmt.Sprintf("%s://%s", protocol, host)
 
 	resp, err := h.DeviceFlowSvc.StartDeviceFlow(c.Request.Context(), baseURL)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -150,7 +151,7 @@ func (h *CompatibilityHandler) ExchangeOAuthToken(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -170,7 +171,7 @@ func (h *CompatibilityHandler) UploadWorkerMetrics(c *gin.Context) {
 	}
 	userMap, ok := user.(gin.H)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
+		Internal(c, fmt.Errorf("invalid user context"))
 		return
 	}
 	userID, _ := userMap["id"].(string)
@@ -181,6 +182,11 @@ func (h *CompatibilityHandler) UploadWorkerMetrics(c *gin.Context) {
 
 	var body map[string]any
 	if err := c.ShouldBindJSON(&body); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			Internal(c, err)
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
@@ -199,7 +205,7 @@ func (h *CompatibilityHandler) UploadWorkerMetrics(c *gin.Context) {
 
 	uploadErrors, err := h.MetricsSvc.UploadBatch(c.Request.Context(), userID, distinctIDPtr, batch)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -219,7 +225,7 @@ func (h *CompatibilityHandler) UploadWorkerCas(c *gin.Context) {
 		if err := c.ShouldBindJSON(&body); err == nil && len(body.Objects) > 0 {
 			result, err := h.CasSvc.UploadObjects(c.Request.Context(), body.Objects)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				Internal(c, err)
 				return
 			}
 			c.JSON(http.StatusOK, result)
@@ -229,6 +235,11 @@ func (h *CompatibilityHandler) UploadWorkerCas(c *gin.Context) {
 
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			Internal(c, err)
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Either JSON body \"objects\" or multipart file field \"file\" is required",
 		})
@@ -238,7 +249,7 @@ func (h *CompatibilityHandler) UploadWorkerCas(c *gin.Context) {
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+		Internal(c, err)
 		return
 	}
 
@@ -252,7 +263,7 @@ func (h *CompatibilityHandler) UploadWorkerCas(c *gin.Context) {
 
 	hash, err := h.CasSvc.UploadContent(c.Request.Context(), string(data), ct)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -292,7 +303,7 @@ func (h *CompatibilityHandler) ReadWorkerCas(c *gin.Context) {
 
 	result, err := h.CasSvc.ReadObjects(c.Request.Context(), hashList)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -311,7 +322,7 @@ func (h *CompatibilityHandler) CheckoutWorkerCas(c *gin.Context) {
 
 	result, err := h.CasSvc.ReadContent(c.Request.Context(), targetHash)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 	if result == nil {

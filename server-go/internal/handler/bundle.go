@@ -3,8 +3,8 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
+	"git-ai-server/internal/middleware"
 	"git-ai-server/internal/model"
 	"git-ai-server/internal/service"
 
@@ -12,7 +12,8 @@ import (
 )
 
 type BundleHandler struct {
-	Svc *service.BundleService
+	Svc        *service.BundleService
+	TrustProxy bool
 }
 
 func (h *BundleHandler) Create(c *gin.Context) {
@@ -27,21 +28,18 @@ func (h *BundleHandler) Create(c *gin.Context) {
 
 	bundle, err := h.Svc.CreateBundle(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Failed to create bundle",
-			"details": err.Error(),
-		})
+		Internal(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, model.CreateBundleResponse{
 		Success: true,
 		ID:      bundle.ID,
-		URL:     publicURL(c, "/bundles/"+bundle.ID),
+		URL:     publicURL(c, h.TrustProxy, "/bundles/"+bundle.ID),
 	})
 }
 
-func publicURL(c *gin.Context, path string) string {
+func publicURL(c *gin.Context, trustProxy bool, path string) string {
 	host := c.Request.Host
 	if host == "" {
 		host = "localhost"
@@ -50,8 +48,6 @@ func publicURL(c *gin.Context, path string) string {
 	if c.Request.TLS != nil {
 		protocol = "https"
 	}
-	if fwdProto := c.GetHeader("X-Forwarded-Proto"); fwdProto != "" {
-		protocol = strings.TrimSpace(fwdProto)
-	}
+	protocol = middleware.ForwardedProtoOrDefault(c.Request, trustProxy, protocol)
 	return fmt.Sprintf("%s://%s%s", protocol, host, path)
 }

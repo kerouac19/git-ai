@@ -94,6 +94,10 @@ func main() {
 	// Bootstrap initial admin user
 	bootstrapAdminUser(ctx, userSvc, cfg)
 
+	trustProxy := cfg.TrustProxyEnabled()
+	jsonBodyLimit := cfg.ParsedJSONBodyLimit()
+	casUploadLimit := cfg.ParsedCASUploadLimit()
+
 	// Handlers
 	loginH := &handler.LoginHandler{UserSvc: userSvc, JWTSecret: cfg.JWTSecret, IsProduction: isProduction}
 	healthH := &handler.HealthHandler{Pool: pool}
@@ -103,9 +107,10 @@ func main() {
 		CasSvc:        casSvc,
 		DeviceFlowSvc: deviceFlowSvc,
 		MetricsSvc:    metricsSvc,
+		TrustProxy:    trustProxy,
 	}
 	authorshipH := &handler.AuthorshipHandler{Svc: authorshipSvc}
-	bundleH := &handler.BundleHandler{Svc: bundleSvc}
+	bundleH := &handler.BundleHandler{Svc: bundleSvc, TrustProxy: trustProxy}
 	casH := &handler.CasHandler{Svc: casSvc}
 	dashboardH := &handler.DashboardHandler{Svc: dashboardSvc}
 	releaseStore := &service.ReleaseStore{Root: cfg.ReleaseStoragePath}
@@ -121,10 +126,13 @@ func main() {
 	if cfg.HTTPSRedirect {
 		r.Use(middleware.HTTPSRedirectMiddleware())
 	}
-	r.Use(middleware.AuditMiddleware(pool))
+	r.Use(middleware.AuditMiddleware(pool, trustProxy))
 
 	// CORS
 	r.Use(corsMiddleware(cfg.CORSOrigin))
+
+	jsonLimit := middleware.BodyLimit(jsonBodyLimit)
+	casLimit := middleware.BodyLimit(casUploadLimit)
 
 	jwtMW := auth.JWTAuthMiddleware(cfg.JWTSecret)
 	workerMW := auth.WorkerAuthMiddleware(cfg.JWTSecret, cfg.ValidAPIKeys(), defaultTokenSubject(cfg))
@@ -146,10 +154,10 @@ func main() {
 	// --- Worker compatibility endpoints ---
 	workerRoutes := []string{"worker", "workers"}
 	for _, prefix := range workerRoutes {
-		r.POST("/"+prefix+"/oauth/device/code", compatH.StartDeviceFlow)
-		r.POST("/"+prefix+"/oauth/token", compatH.ExchangeOAuthToken)
-		r.POST("/"+prefix+"/metrics/upload", workerMW, compatH.UploadWorkerMetrics)
-		r.POST("/"+prefix+"/cas/upload", workerMW, compatH.UploadWorkerCas)
+		r.POST("/"+prefix+"/oauth/device/code", jsonLimit, compatH.StartDeviceFlow)
+		r.POST("/"+prefix+"/oauth/token", jsonLimit, compatH.ExchangeOAuthToken)
+		r.POST("/"+prefix+"/metrics/upload", jsonLimit, workerMW, compatH.UploadWorkerMetrics)
+		r.POST("/"+prefix+"/cas/upload", casLimit, workerMW, compatH.UploadWorkerCas)
 		r.GET("/"+prefix+"/cas", workerMW, compatH.ReadWorkerCas)
 		r.GET("/"+prefix+"/cas/", workerMW, compatH.ReadWorkerCas)
 		r.GET("/"+prefix+"/cas/checkout", workerMW, compatH.CheckoutWorkerCas)
@@ -158,6 +166,8 @@ func main() {
 	}
 
 	// --- /api/* routes ---
+	// Body limits are applied per subgroup because http.MaxBytesReader only
+	// tightens — once a group installs jsonLimit, subgroups can't relax it.
 	api := r.Group("/api")
 	{
 		api.GET("/health", healthH.GetAPIHealth)
@@ -167,19 +177,21 @@ func main() {
 		api.GET("/me", jwtMW, compatH.GetMe)
 
 		// User auth
-		api.POST("/user/login", loginH.Login)
+		api.POST("/user/login", jsonLimit, loginH.Login)
 		api.GET("/user/logout", loginH.Logout)
 		api.POST("/user/logout", loginH.Logout)
-		api.POST("/user/register", jwtMW, adminOnly(), loginH.Register)
-		api.POST("/bundles", bundleH.Create)
+		api.POST("/user/register", jsonLimit, jwtMW, adminOnly(), loginH.Register)
+		api.POST("/bundles", jsonLimit, bundleH.Create)
 
-		// Release admin (upload Bearer token auth)
+		// Release admin (upload Bearer token auth). These routes set their
+		// own limit via http.MaxBytesReader in the handler, so no jsonLimit
+		// here.
 		api.PUT("/releases/:channel/artifacts/:tag/:name", uploadAuth, releaseAdminH.PutArtifact)
 		api.PUT("/releases/:channel/current.json", uploadAuth, releaseAdminH.PutCurrent)
 		api.GET("/releases/:channel/current.json", uploadAuth, releaseAdminH.GetCurrent)
 
 		// Authorship
-		authorship := api.Group("/authorship")
+		authorship := api.Group("/authorship", jsonLimit)
 		{
 			authorship.POST("/record", authorshipH.SaveRecord)
 			authorship.POST("/commit", authorshipH.SaveCommitAttribution)
@@ -189,15 +201,16 @@ func main() {
 			authorship.PUT("/sync/:userId", authorshipH.SyncAuthorship)
 		}
 
-		// CAS
-		cas := api.Group("/cas")
+		// CAS — gets the larger casLimit since payloads can be bigger than
+		// the generic 2MB JSON budget.
+		cas := api.Group("/cas", casLimit)
 		{
 			cas.POST("/upload", casH.Upload)
 			cas.GET("/read/:hash", casH.Read)
 		}
 
 		// Dashboard
-		dashboard := api.Group("/dashboard")
+		dashboard := api.Group("/dashboard", jsonLimit)
 		{
 			dashboard.GET("/public", dashboardH.GetPublicStats)
 			dashboard.GET("/stats", dashboardH.GetStats)
@@ -205,7 +218,7 @@ func main() {
 		}
 
 		// Config (JWT protected)
-		cfgGroup := api.Group("/config", jwtMW)
+		cfgGroup := api.Group("/config", jsonLimit, jwtMW)
 		{
 			cfgGroup.GET("", sysConfigH.GetAll)
 			cfgGroup.GET("/:key", sysConfigH.GetByKey)
@@ -257,7 +270,11 @@ func corsMiddleware(origin string) gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Origin", allowOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE")
 		c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type,X-Distinct-Id,X-Distinct-ID,X-API-Key,X-Author-Identity")
-		c.Header("Access-Control-Allow-Credentials", "true")
+		// Browsers reject Allow-Credentials: true combined with Allow-Origin: *,
+		// so only set credentials when the origin is explicitly pinned.
+		if allowOrigin != "*" {
+			c.Header("Access-Control-Allow-Credentials", "true")
+		}
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)

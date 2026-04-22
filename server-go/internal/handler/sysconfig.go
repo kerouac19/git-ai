@@ -19,7 +19,7 @@ func (h *SysConfigHandler) GetAll(c *gin.Context) {
 
 	configs, err := h.Svc.GetAllConfigs(c.Request.Context(), category, key)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -35,7 +35,7 @@ func (h *SysConfigHandler) GetByKey(c *gin.Context) {
 
 	config, err := h.Svc.GetConfig(c.Request.Context(), key)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *SysConfigHandler) Create(c *gin.Context) {
 
 	config, err := h.Svc.CreateConfig(c.Request.Context(), dto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *SysConfigHandler) Update(c *gin.Context) {
 
 	config, err := h.Svc.UpdateConfig(c.Request.Context(), key, dto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *SysConfigHandler) Delete(c *gin.Context) {
 
 	err := h.Svc.DeleteConfig(c.Request.Context(), key)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 

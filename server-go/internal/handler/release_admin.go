@@ -57,7 +57,7 @@ func (h *ReleaseAdminHandler) PutArtifact(c *gin.Context) {
 			errors.Is(err, service.ErrReleaseInvalidName):
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Internal(c, err)
 		}
 		return
 	}
@@ -95,7 +95,7 @@ func (h *ReleaseAdminHandler) PutCurrent(c *gin.Context) {
 			errors.Is(err, service.ErrReleaseInvalidChannel):
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Internal(c, err)
 		}
 		return
 	}
@@ -116,7 +116,7 @@ func (h *ReleaseAdminHandler) GetCurrent(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		Internal(c, err)
 		return
 	}
 	c.Data(http.StatusOK, "application/json", raw)

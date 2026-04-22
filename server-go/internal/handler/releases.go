@@ -76,7 +76,7 @@ func (h *ReleaseHandler) Download(c *gin.Context) {
 			errors.Is(err, service.ErrReleaseInvalidTag):
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "release pointer malformed"})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			Internal(c, err)
 		}
 		return
 	}
