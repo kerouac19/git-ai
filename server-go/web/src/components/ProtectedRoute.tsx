@@ -4,7 +4,7 @@ import { useMe } from "../hooks/useMe";
 import type { DashboardStats, User } from "../types/api";
 
 interface Props {
-  children: (data: { user: User; dashboard: DashboardStats }) => ReactNode;
+  children: (data: { user: User; dashboard: DashboardStats; org?: { id: string; name: string } }) => ReactNode;
 }
 
 export default function ProtectedRoute({ children }: Props) {
@@ -21,5 +21,5 @@ export default function ProtectedRoute({ children }: Props) {
   if (state.status === "error") {
     return <div style={{ padding: 24, color: "var(--danger)" }}>Error: {state.error.message}</div>;
   }
-  return <>{children({ user: state.user, dashboard: state.dashboard })}</>;
+  return <>{children({ user: state.user, dashboard: state.dashboard, org: state.org })}</>;
 }

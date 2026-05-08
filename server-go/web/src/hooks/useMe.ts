@@ -4,7 +4,7 @@ import type { DashboardStats, MeApiResponse, User } from "../types/api";
 
 type State =
   | { status: "loading" }
-  | { status: "authenticated"; user: User; dashboard: DashboardStats }
+  | { status: "authenticated"; user: User; dashboard: DashboardStats; org?: { id: string; name: string } }
   | { status: "anonymous" }
   | { status: "error"; error: Error };
 
@@ -16,7 +16,7 @@ export function useMe(): State {
     api.get<MeApiResponse>("/api/me")
       .then(res => {
         if (cancelled) return;
-        setState({ status: "authenticated", user: res.user, dashboard: res.dashboard });
+        setState({ status: "authenticated", user: res.user, dashboard: res.dashboard, org: res.org });
       })
       .catch(err => {
         if (cancelled) return;

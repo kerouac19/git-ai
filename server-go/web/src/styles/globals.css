@@ -338,12 +338,6 @@ button:disabled {
   margin: 0;
 }
 
-.me-page__org-slug {
-  color: var(--muted);
-  font-size: 0.75rem;
-  margin: 0;
-}
-
 .me-page__uid-value {
   font-family: monospace;
   font-size: 0.875rem;

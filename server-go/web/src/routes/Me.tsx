@@ -3,7 +3,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import { authApi } from "../api/auth";
 import type { DashboardStats, User } from "../types/api";
 
-function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats }) {
+function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardStats; org?: { id: string; name: string } }) {
   const navigate = useNavigate();
 
   async function onLogout() {
@@ -17,7 +17,6 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
   const out   = dashboard.aiOutput;
   const act   = dashboard.activity;
 
-  const org     = user.orgs?.[0];
   const initial = user.name?.[0]?.toUpperCase() ?? "?";
 
   const hasSynced = !!ms?.lastSyncAt;
@@ -64,8 +63,7 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
                   </svg>
                 </div>
                 <div>
-                  <p className="me-page__org-name">{org.org_name}</p>
-                  <p className="me-page__org-slug">Slug: {org.org_slug}</p>
+                  <p className="me-page__org-name">{org.name}</p>
                 </div>
               </div>
             </div>
@@ -210,7 +208,7 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
 export default function Me() {
   return (
     <ProtectedRoute>
-      {({ user, dashboard }) => <MeContent user={user} dashboard={dashboard} />}
+      {({ user, dashboard, org }) => <MeContent user={user} dashboard={dashboard} org={org} />}
     </ProtectedRoute>
   );
 }

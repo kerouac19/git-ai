@@ -18,6 +18,7 @@ export interface MeApiResponse {
   dashboard: DashboardStats;
   recentAuthorship: unknown[];
   totalAuthorshipRecords: number;
+  org?: { id: string; name: string };
 }
 
 export interface DashboardStats {
