@@ -17,7 +17,7 @@
 | `server-go/deploy/opt-git-ai.env` | `.env` 字段参考 | 与 `deploy.sh` 已对齐（PORT=3000） |
 | `server-go/README.md`（裸机段） | 早期手工流程 | 仅作为概念参考；新部署一律走 `deploy.sh` |
 
-`deploy.sh` 默认 `.env` 是开发取向（`CORS_ORIGIN=*`、`DB_PASSWORD=` 空、`DEFAULT_USER_ROLE` 不显式给），上生产前必须按 §4.4 改掉。
+`deploy.sh` 默认 `.env` 是开发取向（`CORS_ORIGIN=*`、`DB_PASSWORD=` 空、`DEFAULT_USER_ROLE` 不显式给），上生产前必须按 §4.5 改掉。
 
 ---
 
@@ -199,7 +199,41 @@ sudo bash /tmp/deploy.sh install
 8. `systemctl start git-ai`
 9. `curl /health`、`/api/health/database` 验证
 
-### 4.4 修正自动生成的 .env
+### 4.4 部署前端静态文件（install-web）
+
+`bash deploy.sh build` 同时产出 `bin/git-ai-server` 和 `web/dist/`。需将两者一起传到目标机：
+
+```bash
+# 构建机
+scp bin/git-ai-server  user@target:/tmp/
+scp scripts/deploy.sh  user@target:/tmp/
+scp -r web/dist/       user@target:/tmp/dist/
+```
+
+在目标机执行完 `install` 后，运行：
+
+```bash
+sudo bash /tmp/deploy.sh install-web
+```
+
+`install-web` 干的事：
+
+1. 创建 `/var/www/git-ai/dist/` 并设 `www-data` 属主
+2. 写入 `/etc/nginx/snippets/git-ai-proxy.conf`（nginx proxy 头公共片段）
+3. Rsync `web/dist/` 到 `/var/www/git-ai/dist/`
+
+> ⚠️ `deploy/nginx.conf` 通过 `include /etc/nginx/snippets/git-ai-proxy.conf;` 引用该片段。
+> 若跳过 `install-web`，`nginx -t` 会报 "open() failed"，reload 失败。
+
+**每次升级**都要重跑 `install-web` 以刷新静态资源：
+
+```bash
+sudo bash /tmp/deploy.sh upgrade
+sudo bash /tmp/deploy.sh install-web
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 4.5 修正自动生成的 .env
 
 `deploy.sh` 默认值偏开发，**上生产前必须改**：
 
@@ -243,7 +277,7 @@ Database target: postgres://127.0.0.1:5432/git_ai
 Trust proxy: 1
 ```
 
-### 4.5 配置 nginx
+### 4.6 配置 nginx
 
 ```bash
 sudo cp server-go/deploy/nginx.conf /etc/nginx/sites-available/git-ai
@@ -255,7 +289,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 详见 §7。
 
-### 4.6 端到端验证
+### 4.7 端到端验证
 
 ```bash
 curl https://git-ai.your-company.com/health
