@@ -68,7 +68,7 @@ export default function DeviceFlow() {
     return (
       <main className="page-main">
         <section className="panel">
-          <p className="muted">Loading…</p>
+          <p className="muted">加载中…</p>
         </section>
       </main>
     );
@@ -84,47 +84,46 @@ export default function DeviceFlow() {
     <main className="page-main">
       <section className="panel">
         <p className="muted device-flow__subtitle">Git AI device authorization</p>
-        <h1>Approve CLI access</h1>
+        <h1>审核命令行授权</h1>
         <p>
-          Authorize the pending CLI login for{" "}
-          <strong>{info.subject?.name ?? "(unknown)"}</strong>
-          {info.subject?.email ? ` (${info.subject.email})` : ""}.
+          为 <strong>{info.subject?.name ?? "(unknown)"}</strong>
+          {info.subject?.email ? `（${info.subject.email}）` : ""} 授权待处理的 CLI 登录请求。
         </p>
 
         <div className="grid" style={{ marginTop: 24 }}>
           <div className="card">
-            <h2>User Code</h2>
+            <h2>用户代码</h2>
             <p><code className="device-flow__code-value">{info.user_code}</code></p>
           </div>
           <div className="card">
-            <h2>Expires At</h2>
+            <h2>过期时间</h2>
             <p>{info.expires_at ?? "n/a"}</p>
           </div>
           <div className="card">
-            <h2>Status</h2>
+            <h2>状态</h2>
             <p>{info.status}</p>
           </div>
         </div>
 
         {isApproved && (
-          <div className="notice ok">This device has already been approved.</div>
+          <div className="notice ok">该设备已通过授权。</div>
         )}
         {isDenied && (
-          <div className="notice error">This device request has already been denied.</div>
+          <div className="notice error">该设备授权请求已被拒绝。</div>
         )}
 
         {isPending ? (
           <div className="actions">
             <button className="primary" type="button" disabled={busy} onClick={() => handle("approve")}>
-              Approve Device
+              同意
             </button>
             <button className="secondary" type="button" disabled={busy} onClick={() => handle("deny")}>
-              Deny
+              拒绝
             </button>
           </div>
         ) : (
           <div className="actions">
-            <a className="button primary" href="/me">Open Dashboard</a>
+            <a className="button primary" href="/me">打开仪表盘</a>
           </div>
         )}
       </section>

@@ -53,14 +53,14 @@ export default function Login() {
           </svg>
         </div>
 
-        <h1>Sign in to Git AI</h1>
+        <h1>登录 Git AI</h1>
         <p className="muted login__subtitle">
-          Enter your credentials to access your dashboard.
+          登录后即可访问个人仪表盘和审核 CLI 授权。
         </p>
 
         <form className="login__form" onSubmit={onSubmit}>
           <label className="login__field">
-            <span className="login__field-label">Username</span>
+            <span className="login__field-label">用户名</span>
             <input
               className="login__input"
               value={username}
@@ -70,7 +70,7 @@ export default function Login() {
             />
           </label>
           <label className="login__field">
-            <span className="login__field-label">Password</span>
+            <span className="login__field-label">密码</span>
             <input
               className="login__input"
               type="password"
@@ -85,7 +85,7 @@ export default function Login() {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? "登录中…" : "登录"}
           </button>
         </form>
       </section>

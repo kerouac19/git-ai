@@ -4,20 +4,20 @@ type Tone = "ok" | "error";
 
 const COPY: Record<string, { title: string; message: string; tone: Tone; linkURL?: string; linkText?: string }> = {
   ok: {
-    title: "Device Approved",
-    message: "CLI authorization completed. You can return to your terminal.",
+    title: "授权成功",
+    message: "CLI 授权已完成，您可以返回终端继续操作。",
     tone: "ok",
     linkURL: "/me",
-    linkText: "Open Dashboard",
+    linkText: "打开仪表盘",
   },
   denied: {
-    title: "Device Denied",
-    message: "CLI authorization was denied. You can close this tab.",
+    title: "授权已拒绝",
+    message: "CLI 授权请求已被拒绝，您可以关闭此标签页。",
     tone: "error",
   },
   error: {
-    title: "Authorization Error",
-    message: "The device code could not be processed.",
+    title: "授权错误",
+    message: "设备代码处理失败，请重试。",
     tone: "error",
   },
 };

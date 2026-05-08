@@ -43,9 +43,9 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
           <div className="me-page__header-status">
             <span className={`me-page__sync-status-badge ${hasSynced ? "synced" : "offline"}`}>
               <span className={`status-dot ${hasSynced ? "online" : "offline"}`}></span>
-              {hasSynced ? "Syncing" : "Not connected"}
+              {hasSynced ? "正在同步" : "未连接"}
             </span>
-            <p className="me-page__sync-time">Last sync: {ms?.lastSyncAt ?? "—"}</p>
+            <p className="me-page__sync-time">最后同步: {ms?.lastSyncAt ?? "—"}</p>
           </div>
         </div>
 
@@ -53,7 +53,7 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
         <div className="grid">
           {org ? (
             <div className="card me-page__org-card">
-              <h2>Organization</h2>
+              <h2>组织架构</h2>
               <div className="me-page__org-info">
                 <div className="me-page__org-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -71,13 +71,13 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
             </div>
           ) : (
             <div className="card me-page__org-card">
-              <h2>Organization</h2>
-              <p className="muted" style={{ margin: 0 }}>No organization</p>
+              <h2>组织架构</h2>
+              <p className="muted" style={{ margin: 0 }}>暂无组织</p>
             </div>
           )}
 
           <div className="card">
-            <h2>User ID</h2>
+            <h2>用户识别码</h2>
             <p className="me-page__uid-value">{user.id}</p>
           </div>
         </div>
@@ -87,7 +87,7 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
       <div className="metrics-grid" style={{ marginTop: 24 }}>
         {/* AI code contribution % */}
         <div className="card">
-          <p className="metric-label">AI Code Contribution</p>
+          <p className="metric-label">AI 代码贡献占比</p>
           <p className="kpi">
             {aiPct}
             {ai && <span className="kpi-unit">%</span>}
@@ -96,15 +96,15 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
             <div className="me-page__progress-fill" style={{ width: `${Math.min(aiPctNum, 100)}%` }} />
           </div>
           <p className="muted" style={{ fontSize: "0.75rem" }}>
-            AI committed {ai?.committedAiLines ?? 0} lines / total {ai?.totalAddedLines ?? 0} lines
+            AI 提交 {ai?.committedAiLines ?? 0} 行 / 总计 {ai?.totalAddedLines ?? 0} 行
           </p>
         </div>
 
         {/* Active prompts */}
         <div className="card">
-          <p className="metric-label">Active Prompts</p>
+          <p className="metric-label">活跃 Prompt 数</p>
           <p className="kpi">{act?.activePromptCount ?? "—"}</p>
-          <p className="muted" style={{ fontSize: "0.75rem" }}>Independent prompts in the past 7 days</p>
+          <p className="muted" style={{ fontSize: "0.75rem" }}>过去 7 天内独立 Prompt 统计</p>
           <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
             <span className="me-page__prompt-badge">Prompts</span>
           </div>
@@ -112,23 +112,23 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
 
         {/* Top agent */}
         <div className="card">
-          <p className="metric-label">Top Agent</p>
+          <p className="metric-label">最常使用 Agent</p>
           <p className="kpi" style={{ fontSize: "1.5rem", margin: "12px 0" }}>
             {dashboard.leaders?.topAgent?.label ?? "—"}
           </p>
           <p className="muted" style={{ fontSize: "0.75rem" }}>
-            Active count: {dashboard.leaders?.topAgent?.promptCount ?? 0}
+            活跃次数: {dashboard.leaders?.topAgent?.promptCount ?? 0}
           </p>
         </div>
 
         {/* Top model */}
         <div className="card">
-          <p className="metric-label">Top AI Model</p>
+          <p className="metric-label">常用 AI 模型</p>
           <p className="kpi" style={{ fontSize: "1.5rem", margin: "12px 0" }}>
             {dashboard.leaders?.topModel?.label ?? "—"}
           </p>
           <p className="muted" style={{ fontSize: "0.75rem" }}>
-            Active count: {dashboard.leaders?.topModel?.promptCount ?? 0}
+            活跃次数: {dashboard.leaders?.topModel?.promptCount ?? 0}
           </p>
         </div>
       </div>
@@ -136,35 +136,35 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
       {/* ── 7-day output & activity ───────────────────────────── */}
       <div className="card me-page__stats-card" style={{ marginTop: 24 }}>
         <div>
-          <h2>AI Output Efficiency (7d)</h2>
+          <h2>AI 输出效能 (7d)</h2>
           <div className="me-page__stat-rows">
             <div className="me-page__stat-row">
-              <span className="muted">Generated lines</span>
+              <span className="muted">生成代码行数</span>
               <span style={{ fontWeight: 700 }}>{out?.generated ?? "—"}</span>
             </div>
             <div className="me-page__stat-row">
-              <span className="muted">Committed lines</span>
+              <span className="muted">已提交代码行数</span>
               <span style={{ fontWeight: 700 }}>{ai?.committedAiLines ?? "—"}</span>
             </div>
             <div className="me-page__stat-row">
-              <span className="muted">Human-edited lines</span>
+              <span className="muted">人工编辑代码行数</span>
               <span style={{ fontWeight: 700 }}>{out?.edited ?? "—"}</span>
             </div>
           </div>
         </div>
         <div>
-          <h2>Development Activity (7d)</h2>
+          <h2>开发活跃度 (7d)</h2>
           <div className="me-page__stat-rows">
             <div className="me-page__stat-row">
-              <span className="muted">Files touched</span>
+              <span className="muted">触达文件总数</span>
               <span style={{ fontWeight: 700 }}>{act?.checkpointFileCount ?? "—"}</span>
             </div>
             <div className="me-page__stat-row">
-              <span className="muted">Repos involved</span>
+              <span className="muted">涉及代码仓库</span>
               <span style={{ fontWeight: 700 }}>{ms?.repoCount7d ?? "—"}</span>
             </div>
             <div className="me-page__stat-row">
-              <span className="muted">Sync events</span>
+              <span className="muted">同步事件总数</span>
               <span style={{ fontWeight: 700 }}>{ms?.eventCount7d ?? "—"}</span>
             </div>
           </div>
@@ -174,26 +174,24 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
       {/* ── Today's overview ─────────────────────────────────── */}
       <div className="panel me-page__today-panel">
         <div className="me-page__today-header">
-          <h2>Today's Overview</h2>
+          <h2>今日动态概览</h2>
           <span className="muted" style={{ fontSize: "0.75rem" }}>
-            Updated: {today?.lastUpdatedAt ?? "—"}
+            更新时间: {today?.lastUpdatedAt ?? "—"}
           </span>
         </div>
         {(today?.activityCount ?? 0) > 0 ? (
           <p style={{ margin: 0 }}>
-            Today there are <strong>{today!.activityCount}</strong> activity records,
-            covering <strong>{today!.promptCount}</strong> prompts
-            and <strong>{today!.fileCount}</strong> files.
+            今日已有 <strong>{today!.activityCount}</strong> 条活动记录，涵盖 <strong>{today!.promptCount}</strong> 个 Prompt 及 <strong>{today!.fileCount}</strong> 个文件。
           </p>
         ) : (
-          <p style={{ margin: 0 }}>No active data synced today.</p>
+          <p style={{ margin: 0 }}>今日暂无活跃数据同步。</p>
         )}
       </div>
 
       {/* ── Sign out ─────────────────────────────────────────── */}
       <div className="actions">
         <button className="secondary" type="button" onClick={onLogout}>
-          Sign out
+          退出登录
         </button>
       </div>
     </main>
