@@ -1,0 +1,9 @@
+server-go/deploy/nginx.conf
+  ai_agent 48-51,83-84,87,91-96,98-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "d42f97fb01ad4839ec6f830e7db609feed74e9a9",
+  "prompts": {}
+}
