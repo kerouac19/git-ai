@@ -28,7 +28,7 @@ This change is **schema only** — it lays the foundation. Service/handler/UI ch
 | Nullability | `org_id NOT NULL` | Stronger invariant from day one. |
 | Backfill mechanism | Column `DEFAULT '<sentinel-uuid>'` instead of two-step nullable→backfill→NOT NULL | Lets existing `INSERT INTO users (...)` (which doesn't mention `org_id`) keep working. No Go changes required. |
 | Default org name | `研发` | Per user direction. |
-| Default org UUID | Fixed sentinel `00000000-0000-0000-0000-000000000001` | Stable, code-referenceable, lets us hardcode it as the column DEFAULT. |
+| Default org UUID | Fixed sentinel `00000000-0000-0000-0000-0000000000a1` | Stable, code-referenceable, hardcoded as column DEFAULT. Trailing `a1` is deliberately distinct from the bootstrap admin user UUID `…001` (used by `DEFAULT_USER_ID` in `internal/config/config.go:196`) to avoid cross-table confusion. |
 | `ON DELETE` | `RESTRICT` | Defensive. Deleting an org with users attached must be an explicit operation. |
 | Org name uniqueness | `UNIQUE` on `orgs.name` | Few orgs, names act as identifiers in any future UI. |
 
@@ -52,13 +52,13 @@ CREATE TABLE IF NOT EXISTS orgs (
 -- Sentinel default org. Fixed UUID so it can be referenced as a column DEFAULT
 -- and from Go code in later PRs without a name lookup.
 INSERT INTO orgs (id, name)
-VALUES ('00000000-0000-0000-0000-000000000001', '研发')
+VALUES ('00000000-0000-0000-0000-0000000000a1', '研发')
 ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE users
     ADD COLUMN org_id UUID
         NOT NULL
-        DEFAULT '00000000-0000-0000-0000-000000000001'
+        DEFAULT '00000000-0000-0000-0000-0000000000a1'
         REFERENCES orgs(id) ON DELETE RESTRICT;
 
 CREATE INDEX IF NOT EXISTS idx_users_org_id ON users (org_id);
@@ -96,8 +96,8 @@ Conclusion: zero Go-code changes required. Verifiable by `grep -n org server-go/
 
 - `task build` must pass (no Go changes; sanity check only).
 - Run the migration against a local Postgres and verify:
-  - `SELECT * FROM orgs;` shows one row, name `研发`, id ending `…001`.
-  - `SELECT id, org_id FROM users LIMIT 5;` shows all existing users now have `org_id = …001`.
+  - `SELECT * FROM orgs;` shows one row, name `研发`, id ending `…a1`.
+  - `SELECT id, org_id FROM users LIMIT 5;` shows all existing users now have `org_id = …a1`.
   - Inserting a new user without specifying `org_id` succeeds and gets the sentinel.
 - No new Go tests in this PR. Existing `task test` should pass unchanged.
 
