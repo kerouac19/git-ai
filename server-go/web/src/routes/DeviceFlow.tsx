@@ -54,28 +54,80 @@ export default function DeviceFlow() {
     }
   }
 
-  if (error) return <main style={{ padding: 24, color: "var(--danger)" }}>{error}</main>;
-  if (!info) return <main style={{ padding: 24 }}>Loading…</main>;
+  if (error) {
+    return (
+      <main className="page-main">
+        <section className="panel">
+          <div className="notice error">{error}</div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!info) {
+    return (
+      <main className="page-main">
+        <section className="panel">
+          <p className="muted">Loading…</p>
+        </section>
+      </main>
+    );
+  }
+
   if (!info.authenticated) return null; // redirect effect above will navigate
 
+  const isPending  = info.status === "pending";
+  const isApproved = info.status === "approved";
+  const isDenied   = info.status === "denied";
+
   return (
-    <main style={{ maxWidth: 480, margin: "80px auto", padding: 32, background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 16 }}>
-      <h1 style={{ marginTop: 0 }}>Authorize CLI</h1>
-      <p style={{ color: "var(--muted)" }}>
-        A command-line tool is requesting access as <strong>{info.subject?.name ?? "(unknown)"}</strong>
-        {info.subject?.email ? ` (${info.subject.email})` : ""}.
-      </p>
-      <p style={{ color: "var(--muted)", fontSize: 13 }}>
-        Code: <code>{info.user_code}</code> · expires {info.expires_at ?? "n/a"}
-      </p>
-      <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        <button onClick={() => handle("approve")} disabled={busy} style={{ flex: 1, padding: 10, background: "var(--accent)", color: "white", border: "none", borderRadius: 8 }}>
-          Approve
-        </button>
-        <button onClick={() => handle("deny")} disabled={busy} style={{ flex: 1, padding: 10, background: "transparent", color: "var(--danger)", border: "1px solid var(--danger)", borderRadius: 8 }}>
-          Deny
-        </button>
-      </div>
+    <main className="page-main">
+      <section className="panel">
+        <p className="muted device-flow__subtitle">Git AI device authorization</p>
+        <h1>Approve CLI access</h1>
+        <p>
+          Authorize the pending CLI login for{" "}
+          <strong>{info.subject?.name ?? "(unknown)"}</strong>
+          {info.subject?.email ? ` (${info.subject.email})` : ""}.
+        </p>
+
+        <div className="grid" style={{ marginTop: 24 }}>
+          <div className="card">
+            <h2>User Code</h2>
+            <p><code className="device-flow__code-value">{info.user_code}</code></p>
+          </div>
+          <div className="card">
+            <h2>Expires At</h2>
+            <p>{info.expires_at ?? "n/a"}</p>
+          </div>
+          <div className="card">
+            <h2>Status</h2>
+            <p>{info.status}</p>
+          </div>
+        </div>
+
+        {isApproved && (
+          <div className="notice ok">This device has already been approved.</div>
+        )}
+        {isDenied && (
+          <div className="notice error">This device request has already been denied.</div>
+        )}
+
+        {isPending ? (
+          <div className="actions">
+            <button className="primary" type="button" disabled={busy} onClick={() => handle("approve")}>
+              Approve Device
+            </button>
+            <button className="secondary" type="button" disabled={busy} onClick={() => handle("deny")}>
+              Deny
+            </button>
+          </div>
+        ) : (
+          <div className="actions">
+            <a className="button primary" href="/me">Open Dashboard</a>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

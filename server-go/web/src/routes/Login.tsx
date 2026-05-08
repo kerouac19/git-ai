@@ -42,34 +42,53 @@ export default function Login() {
   }
 
   return (
-    <main style={{ maxWidth: 400, margin: "80px auto", padding: 32, background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 16 }}>
-      <h1 style={{ marginTop: 0 }}>Sign in</h1>
-      <form onSubmit={onSubmit}>
-        <label style={{ display: "block", marginBottom: 12 }}>
-          <div style={{ marginBottom: 4 }}>Username</div>
-          <input
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            autoFocus
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </label>
-        <label style={{ display: "block", marginBottom: 16 }}>
-          <div style={{ marginBottom: 4 }}>Password</div>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </label>
-        {error && <div style={{ color: "var(--danger)", marginBottom: 12 }}>{error}</div>}
-        <button type="submit" disabled={submitting} style={{ width: "100%", padding: 10, background: "var(--accent)", color: "white", border: "none", borderRadius: 8 }}>
-          {submitting ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+    <main className="login__page-main">
+      <section className="panel login__panel">
+        {/* Icon */}
+        <div className="login__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+
+        <h1>Sign in to Git AI</h1>
+        <p className="muted login__subtitle">
+          Enter your credentials to access your dashboard.
+        </p>
+
+        <form className="login__form" onSubmit={onSubmit}>
+          <label className="login__field">
+            <span className="login__field-label">Username</span>
+            <input
+              className="login__input"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoFocus
+              required
+            />
+          </label>
+          <label className="login__field">
+            <span className="login__field-label">Password</span>
+            <input
+              className="login__input"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </label>
+          {error && <div className="login__error">{error}</div>}
+          <button
+            className="primary login__submit"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      </section>
     </main>
   );
 }
