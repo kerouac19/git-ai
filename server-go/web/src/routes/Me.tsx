@@ -1,28 +1,20 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Stat from "../components/Stat";
-import { dashboardApi } from "../api/dashboard";
 import { authApi } from "../api/auth";
 import type { DashboardStats, User } from "../types/api";
 
-function MeContent({ user }: { user: User }) {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats }) {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dashboardApi.stats().then(setStats).catch(err => setError(String(err)));
-  }, []);
 
   async function onLogout() {
     try { await authApi.logout(); } catch { /* ignore */ }
     navigate("/login", { replace: true });
   }
 
-  const ai = stats?.aiCode;
-  const today = stats?.today;
-  const ms = stats?.metricsSummary;
+  const ai = dashboard.aiCode;
+  const today = dashboard.today;
+  const ms = dashboard.metricsSummary;
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px 80px" }}>
@@ -36,8 +28,6 @@ function MeContent({ user }: { user: User }) {
         </button>
       </header>
 
-      {error && <div style={{ color: "var(--danger)", marginBottom: 16 }}>Failed to load dashboard: {error}</div>}
-
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 32 }}>
         <Stat label="AI code %" value={ai ? `${ai.percentage.toFixed(1)}%` : "—"} hint={ai ? `${ai.committedAiLines}/${ai.totalAddedLines} lines` : undefined} />
         <Stat label="Today activity" value={today?.activityCount ?? "—"} hint={today?.lastUpdatedAt ? `last: ${today.lastUpdatedAt}` : undefined} />
@@ -50,13 +40,13 @@ function MeContent({ user }: { user: User }) {
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div>
             <div style={{ color: "var(--muted)", fontSize: 13 }}>Agent</div>
-            <div style={{ fontWeight: 600 }}>{stats?.leaders?.topAgent?.label ?? "—"}</div>
-            <div style={{ color: "var(--muted)", fontSize: 13 }}>{stats?.leaders?.topAgent?.promptCount ?? 0} prompts</div>
+            <div style={{ fontWeight: 600 }}>{dashboard.leaders?.topAgent?.label ?? "—"}</div>
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>{dashboard.leaders?.topAgent?.promptCount ?? 0} prompts</div>
           </div>
           <div>
             <div style={{ color: "var(--muted)", fontSize: 13 }}>Model</div>
-            <div style={{ fontWeight: 600 }}>{stats?.leaders?.topModel?.label ?? "—"}</div>
-            <div style={{ color: "var(--muted)", fontSize: 13 }}>{stats?.leaders?.topModel?.promptCount ?? 0} prompts</div>
+            <div style={{ fontWeight: 600 }}>{dashboard.leaders?.topModel?.label ?? "—"}</div>
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>{dashboard.leaders?.topModel?.promptCount ?? 0} prompts</div>
           </div>
         </div>
       </section>
@@ -65,5 +55,9 @@ function MeContent({ user }: { user: User }) {
 }
 
 export default function Me() {
-  return <ProtectedRoute>{user => <MeContent user={user} />}</ProtectedRoute>;
+  return (
+    <ProtectedRoute>
+      {({ user, dashboard }) => <MeContent user={user} dashboard={dashboard} />}
+    </ProtectedRoute>
+  );
 }

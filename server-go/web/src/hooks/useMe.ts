@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
-import type { MeApiResponse, User } from "../types/api";
+import type { DashboardStats, MeApiResponse, User } from "../types/api";
 
 type State =
   | { status: "loading" }
-  | { status: "authenticated"; user: User }
+  | { status: "authenticated"; user: User; dashboard: DashboardStats }
   | { status: "anonymous" }
   | { status: "error"; error: Error };
 
@@ -16,7 +16,7 @@ export function useMe(): State {
     api.get<MeApiResponse>("/api/me")
       .then(res => {
         if (cancelled) return;
-        setState({ status: "authenticated", user: res.user });
+        setState({ status: "authenticated", user: res.user, dashboard: res.dashboard });
       })
       .catch(err => {
         if (cancelled) return;
