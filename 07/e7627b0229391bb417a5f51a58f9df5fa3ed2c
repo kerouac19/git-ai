@@ -1,0 +1,13 @@
+server-go/web/src/routes/Me.tsx
+  ai_agent 1-69
+server-go/web/src/api/dashboard.ts
+  ai_agent 1-6
+server-go/web/src/components/Stat.tsx
+  ai_agent 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "07e7627b0229391bb417a5f51a58f9df5fa3ed2c",
+  "prompts": {}
+}
