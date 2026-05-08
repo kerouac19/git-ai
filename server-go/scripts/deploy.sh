@@ -89,6 +89,18 @@ cmd_build() {
         -o "${BUILD_OUTPUT}" ./cmd/server
 
     ok "构建完成: $(pwd)/${BUILD_OUTPUT} ($(du -h "${BUILD_OUTPUT}" | cut -f1)) commit=${commit}"
+
+    if [[ -d "web" ]]; then
+        info "构建 web (前端)..."
+        if ! command -v pnpm &>/dev/null; then
+            die "未找到 pnpm，请先安装 pnpm 8+ (npm i -g pnpm)"
+        fi
+        (cd web && pnpm install --frozen-lockfile && pnpm build)
+        ok "前端构建完成: $(pwd)/web/dist"
+    else
+        warn "未发现 web/ 目录，跳过前端构建"
+    fi
+
     echo ""
     info "下一步: 将 ${BUILD_OUTPUT} 和此脚本传到目标服务器，然后运行:"
     echo "  sudo bash deploy.sh install"
@@ -346,21 +358,62 @@ cmd_status() {
         || warn "无法获取版本"
 }
 
+# ─────────────────── install-web ───────────────────
+cmd_install_web() {
+    [[ $EUID -eq 0 ]] || die "请使用 sudo 运行"
+
+    local web_root="/var/www/git-ai/dist"
+    local snippets_dir="/etc/nginx/snippets"
+    local snippet="${snippets_dir}/git-ai-proxy.conf"
+
+    info "安装前端静态目录与 nginx 片段..."
+    mkdir -p "${web_root}"
+    chown -R www-data:www-data "${web_root}" 2>/dev/null || true
+    chmod 755 "${web_root}"
+
+    mkdir -p "${snippets_dir}"
+    cat >"${snippet}" <<'EOF'
+proxy_http_version 1.1;
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto https;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Port 443;
+EOF
+    ok "已写入 ${snippet}"
+
+    # 同步前端 dist（若与脚本同目录或在 ../web/dist）
+    if [[ -d "$(dirname "$0")/dist" ]]; then
+        rsync -a --delete "$(dirname "$0")/dist/" "${web_root}/"
+        ok "已同步前端到 ${web_root}"
+    elif [[ -d "$(dirname "$0")/../web/dist" ]]; then
+        rsync -a --delete "$(dirname "$0")/../web/dist/" "${web_root}/"
+        ok "已同步前端到 ${web_root}"
+    else
+        warn "未找到 web/dist 或 ./dist，请手动 rsync 到 ${web_root}"
+    fi
+
+    info "请测试 nginx 配置: sudo nginx -t && sudo systemctl reload nginx"
+}
+
 # ─────────────────── 入口 ───────────────────
 case "${1:-}" in
-    build)    cmd_build    ;;
-    init-db)  cmd_init_db  ;;
-    install)  cmd_install  ;;
-    upgrade)  cmd_upgrade  ;;
-    status)   cmd_status   ;;
+    build)        cmd_build        ;;
+    init-db)      cmd_init_db      ;;
+    install)      cmd_install      ;;
+    install-web)  cmd_install_web  ;;
+    upgrade)      cmd_upgrade      ;;
+    status)       cmd_status       ;;
     *)
-        echo "用法: $0 {build|init-db|install|upgrade|status}"
+        echo "用法: $0 {build|init-db|install|install-web|upgrade|status}"
         echo ""
-        echo "  build    - 编译 linux/amd64 二进制"
-        echo "  init-db  - 创建 PostgreSQL 数据库"
-        echo "  install  - 首次部署（创建目录、.env、systemd 服务并启动）"
-        echo "  upgrade  - 升级二进制（自动备份 + 回滚）"
-        echo "  status   - 查看服务状态和健康检查"
+        echo "  build       - 编译 linux/amd64 二进制并构建前端"
+        echo "  init-db     - 创建 PostgreSQL 数据库"
+        echo "  install     - 首次部署（创建目录、.env、systemd 服务并启动）"
+        echo "  install-web - 安装/更新前端静态目录与 nginx proxy 片段"
+        echo "  upgrade     - 升级二进制（自动备份 + 回滚）"
+        echo "  status      - 查看服务状态和健康检查"
         exit 1
         ;;
 esac
