@@ -2,17 +2,12 @@ package main
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
-	"html/template"
 	"log"
-	"math"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -28,11 +23,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed templates/*.html
-var templateFS embed.FS
-
-var templates *template.Template
-
 // commitHash is overridden at build time via:
 //
 //	go build -ldflags="-X main.commitHash=$(git rev-parse --short HEAD)"
@@ -40,13 +30,6 @@ var templates *template.Template
 // scripts/deploy.sh build does this automatically. Falls back to "dev" so
 // `go run ./cmd/server` still works.
 var commitHash = "dev"
-
-func init() {
-	funcMap := template.FuncMap{
-		"printf": fmt.Sprintf,
-	}
-	templates = template.Must(template.New("").Funcs(funcMap).ParseFS(templateFS, "templates/*.html"))
-}
 
 func main() {
 	cfg, err := config.Load()
@@ -127,6 +110,7 @@ func main() {
 	releaseAdminH := &handler.ReleaseAdminHandler{Store: releaseStore}
 	uploadAuth := middleware.UploadTokenAuth(cfg.ReleaseUploadToken)
 	sysConfigH := &handler.SysConfigHandler{Svc: sysConfigSvc}
+	deviceFlowH := &handler.DeviceFlowHandler{Svc: deviceFlowSvc}
 
 	r := gin.Default()
 
@@ -140,6 +124,8 @@ func main() {
 	// CORS
 	r.Use(corsMiddleware(cfg.CORSOrigin))
 
+	csrfMW := middleware.CSRFProtect()
+
 	jsonLimit := middleware.BodyLimit(jsonBodyLimit)
 	casLimit := middleware.BodyLimit(casUploadLimit)
 
@@ -148,17 +134,6 @@ func main() {
 
 	// --- Direct routes (no /api prefix) ---
 	r.GET("/health", healthH.GetHealth)
-
-	// Login page
-	r.GET("/login", handleLoginPage())
-
-	// OAuth Device Flow HTML pages
-	r.GET("/oauth/device", handleDeviceFlowPage(deviceFlowSvc))
-	r.POST("/oauth/device/approve", handleDeviceApprove(deviceFlowSvc, cfg.JWTSecret, isProduction))
-	r.POST("/oauth/device/deny", handleDeviceDeny(deviceFlowSvc, isProduction))
-
-	// /me dashboard page (cookie-based session)
-	r.GET("/me", handleMePage(deviceFlowSvc, dashboardSvc))
 
 	// --- Worker compatibility endpoints ---
 	workerRoutes := []string{"worker", "workers"}
@@ -185,12 +160,21 @@ func main() {
 		api.GET("/version", compatH.GetVersion)
 		api.GET("/me", jwtMW, compatH.GetMe)
 
+		// Device flow (cookie-session). info is read-only; approve/deny are
+		// CSRF-protected writes that also require a logged-in cookie.
+		device := api.Group("/oauth/device", jsonLimit)
+		{
+			device.GET("/info", deviceFlowH.Info)
+			device.POST("/approve", csrfMW, deviceFlowH.Approve)
+			device.POST("/deny", csrfMW, deviceFlowH.Deny)
+		}
+
 		// User auth
 		api.POST("/user/login", jsonLimit, loginH.Login)
 		api.GET("/user/logout", loginH.Logout)
-		api.POST("/user/logout", loginH.Logout)
-		api.POST("/user/register", jsonLimit, jwtMW, adminOnly(), loginH.Register)
-		api.POST("/bundles", jsonLimit, jwtMW, bundleH.Create)
+		api.POST("/user/logout", csrfMW, loginH.Logout)
+		api.POST("/user/register", jsonLimit, jwtMW, csrfMW, adminOnly(), loginH.Register)
+		api.POST("/bundles", jsonLimit, jwtMW, csrfMW, bundleH.Create)
 
 		// Release admin (upload Bearer token auth). These routes set their
 		// own limit via http.MaxBytesReader in the handler, so no jsonLimit
@@ -230,7 +214,7 @@ func main() {
 		{
 			dashboard.GET("/public", dashboardH.GetPublicStats)
 			dashboard.GET("/stats", jwtMW, dashboardH.GetStats)
-			dashboard.POST("/generate-report", jwtMW, dashboardH.GenerateReport)
+			dashboard.POST("/generate-report", jwtMW, csrfMW, dashboardH.GenerateReport)
 		}
 
 		// Config (JWT protected)
@@ -238,9 +222,9 @@ func main() {
 		{
 			cfgGroup.GET("", sysConfigH.GetAll)
 			cfgGroup.GET("/:key", sysConfigH.GetByKey)
-			cfgGroup.POST("", sysConfigH.Create)
-			cfgGroup.PATCH("/:key", sysConfigH.Update)
-			cfgGroup.DELETE("/:key", sysConfigH.Delete)
+			cfgGroup.POST("", csrfMW, sysConfigH.Create)
+			cfgGroup.PATCH("/:key", csrfMW, sysConfigH.Update)
+			cfgGroup.DELETE("/:key", csrfMW, sysConfigH.Delete)
 		}
 	}
 
@@ -318,349 +302,6 @@ func defaultTokenSubject(cfg *config.Config) auth.TokenSubject {
 	}
 }
 
-// --- HTML page handlers ---
-
-type deviceFlowPageData struct {
-	UserCode     string
-	ExpiresAt    string
-	Status       string
-	SubjectName  string
-	SubjectEmail string
-}
-
-type deviceResultPageData struct {
-	Title    string
-	Message  string
-	Status   string
-	LinkURL  string
-	LinkText string
-}
-
-type dashboardPageData struct {
-	Name                string
-	Email               string
-	Role                string
-	OrgName             string
-	OrgSlug             string
-	Initial             string
-	UserID              string
-	AICodePercentage    float64
-	TotalAddedLines     int
-	CommittedAILines    int
-	GeneratedAILines    int
-	EditedAILines       int
-	TopAgentLabel       string
-	TopAgentCount       int
-	TopModelLabel       string
-	TopModelCount       int
-	ActivePromptCount   int
-	CheckpointFileCount int
-	EventCount7d        int
-	RepoCount7d         int
-	LastSyncAt          string
-	ActivityCount       int
-	PromptCount         int
-	FileCount           int
-	TodayLastUpdatedAt  string
-}
-
-func handleDeviceFlowPage(svc *auth.DeviceFlowService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userCode := c.Query("user_code")
-		if userCode == "" {
-			renderResult(c, http.StatusBadRequest, "Missing User Code", "No user_code query parameter was provided.", "error", "", "")
-			return
-		}
-
-		entry, err := svc.GetDeviceCodeByUserCode(c.Request.Context(), userCode)
-		if err != nil || entry == nil {
-			renderResult(c, http.StatusNotFound, "Device Request Not Found", "The device code is missing, expired, or has already been completed.", "error", "", "")
-			return
-		}
-
-		// Use logged-in user's info if available, otherwise fall back to device code subject
-		subjectName := ""
-		subjectEmail := ""
-		if accessToken := auth.ExtractAccessTokenFromCookie(c.GetHeader("Cookie")); accessToken != "" {
-			if claims, err := svc.DecodeAccessToken(accessToken); err == nil && claims.Subject != "" {
-				subjectName = claims.Name
-				subjectEmail = claims.Email
-			}
-		}
-		if subjectName == "" && entry.Subject != nil {
-			subjectName = entry.Subject.Name
-			subjectEmail = entry.Subject.Email
-		}
-		if subjectName == "" {
-			subjectName = "CLI User"
-			subjectEmail = "pending authorization"
-		}
-
-		// Format expiry time
-		expiresAtStr := ""
-		if entry.ExpiresAt > 0 {
-			expiresAtStr = time.UnixMilli(entry.ExpiresAt).Format("2006-01-02 15:04:05 MST")
-		}
-
-		data := deviceFlowPageData{
-			UserCode:     entry.UserCode,
-			ExpiresAt:    expiresAtStr,
-			Status:       entry.Status,
-			SubjectName:  subjectName,
-			SubjectEmail: subjectEmail,
-		}
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		if err := templates.ExecuteTemplate(c.Writer, "device_flow.html", data); err != nil {
-			c.String(http.StatusInternalServerError, "Template error: %v", err)
-		}
-	}
-}
-
-func handleDeviceApprove(svc *auth.DeviceFlowService, jwtSecret string, isProduction bool) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Check if user has an active browser session
-		accessToken := auth.ExtractAccessTokenFromCookie(c.GetHeader("Cookie"))
-		if accessToken == "" {
-			userCode := c.PostForm("user_code")
-			if userCode == "" {
-				userCode = c.Query("user_code")
-			}
-			redirect := url.QueryEscape("/oauth/device?user_code=" + userCode)
-			renderResult(c, http.StatusUnauthorized, "Login Required", "Please log in first before approving device authorization.", "error", "/login?redirect="+redirect, "Go to Login")
-			return
-		}
-
-		claims, err := svc.DecodeAccessToken(accessToken)
-		if err != nil || claims.Subject == "" {
-			userCode := c.PostForm("user_code")
-			if userCode == "" {
-				userCode = c.Query("user_code")
-			}
-			redirect := url.QueryEscape("/oauth/device?user_code=" + userCode)
-			renderResult(c, http.StatusUnauthorized, "Session Expired", "Your session has expired. Please log in again.", "error", "/login?redirect="+redirect, "Go to Login")
-			return
-		}
-
-		userCode := c.PostForm("user_code")
-		if userCode == "" {
-			userCode = c.Query("user_code")
-		}
-
-		// Update device code with the real user's subject before approving
-		realSubject := auth.TokenSubject{
-			Sub:           claims.Subject,
-			Email:         claims.Email,
-			Name:          claims.Name,
-			PersonalOrgID: claims.PersonalOrgID,
-			Orgs:          claims.Orgs,
-			Role:          claims.Role,
-		}
-		if err := svc.UpdateDeviceCodeSubject(c.Request.Context(), userCode, realSubject); err != nil {
-			log.Printf("[ERROR] Failed to update device code subject: %v", err)
-			renderResult(c, http.StatusInternalServerError, "Error", "Failed to update device authorization.", "error", "", "")
-			return
-		}
-
-		entry, err := svc.ApproveDeviceCode(c.Request.Context(), userCode)
-		if err != nil || entry == nil {
-			renderResult(c, http.StatusNotFound, "Device Request Not Found", "The device code is missing, expired, or has already been completed.", "error", "", "")
-			return
-		}
-
-		if entry.Status == "denied" {
-			renderResult(c, http.StatusConflict, "Authorization Denied", "This device request was already denied and cannot be approved anymore.", "error", "", "")
-			return
-		}
-
-		renderResult(c, http.StatusOK, "Device Approved", "CLI authorization has been approved. This browser session is now signed in.", "ok", "/me", "Open Dashboard")
-	}
-}
-
-func handleDeviceDeny(svc *auth.DeviceFlowService, isProduction bool) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userCode := c.PostForm("user_code")
-		if userCode == "" {
-			userCode = c.Query("user_code")
-		}
-
-		entry, err := svc.DenyDeviceCode(c.Request.Context(), userCode)
-		if err != nil || entry == nil {
-			renderResult(c, http.StatusNotFound, "Device Request Not Found", "The device code is missing, expired, or has already been completed.", "error", "", "")
-			return
-		}
-
-		c.Header("Set-Cookie", auth.ClearSessionCookie(isProduction))
-		renderResult(c, http.StatusOK, "Device Denied", "CLI authorization was denied. You can close this tab and retry git-ai login later.", "error", "", "")
-	}
-}
-
-func handleMePage(svc *auth.DeviceFlowService, dashSvc *service.DashboardService) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		accessToken := auth.ExtractAccessTokenFromCookie(c.GetHeader("Cookie"))
-		if accessToken == "" {
-			renderLoginRequired(c)
-			return
-		}
-
-		claims, err := svc.DecodeAccessToken(accessToken)
-		if err != nil || claims.Subject == "" {
-			renderLoginRequired(c)
-			return
-		}
-
-		dashboard, _ := dashSvc.GetDashboardStats(c.Request.Context(), claims.Subject)
-
-		data := buildDashboardPageData(claims, dashboard)
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		if err := templates.ExecuteTemplate(c.Writer, "dashboard.html", data); err != nil {
-			c.String(http.StatusInternalServerError, "Template error: %v", err)
-		}
-	}
-}
-
-func buildDashboardPageData(claims *auth.Claims, dashboard map[string]interface{}) dashboardPageData {
-	name := claims.Name
-	if name == "" {
-		name = claims.Email
-	}
-
-	orgName := ""
-	orgSlug := ""
-	if len(claims.Orgs) > 0 {
-		orgName = claims.Orgs[0].OrgName
-		orgSlug = claims.Orgs[0].OrgSlug
-	}
-
-	initial := "?"
-	if name != "" {
-		initial = strings.ToUpper(name[:1])
-	}
-
-	data := dashboardPageData{
-		Name:    name,
-		Email:   claims.Email,
-		Role:    claims.Role,
-		OrgName: orgName,
-		OrgSlug: orgSlug,
-		Initial: initial,
-		UserID:  claims.Subject,
-	}
-
-	if dashboard == nil {
-		return data
-	}
-
-	if aiCode, ok := dashboard["aiCode"].(map[string]interface{}); ok {
-		data.AICodePercentage = math.Round(toFloat(aiCode["percentage"])*10) / 10
-		data.TotalAddedLines = toInt(aiCode["totalAddedLines"])
-		data.CommittedAILines = toInt(aiCode["committedAiLines"])
-	}
-	if leaders, ok := dashboard["leaders"].(map[string]interface{}); ok {
-		if ta, ok := leaders["topAgent"].(map[string]interface{}); ok {
-			data.TopAgentLabel = toString(ta["label"])
-			data.TopAgentCount = toInt(ta["promptCount"])
-		}
-		if tm, ok := leaders["topModel"].(map[string]interface{}); ok {
-			data.TopModelLabel = toString(tm["label"])
-			data.TopModelCount = toInt(tm["promptCount"])
-		}
-	}
-	if aiOutput, ok := dashboard["aiOutput"].(map[string]interface{}); ok {
-		data.GeneratedAILines = toInt(aiOutput["generated"])
-		data.EditedAILines = toInt(aiOutput["edited"])
-	}
-	if activity, ok := dashboard["activity"].(map[string]interface{}); ok {
-		data.ActivePromptCount = toInt(activity["activePromptCount"])
-		data.CheckpointFileCount = toInt(activity["checkpointFileCount"])
-	}
-	if ms, ok := dashboard["metricsSummary"].(*model.MetricsSummary); ok && ms != nil {
-		data.EventCount7d = ms.EventCount7d
-		data.RepoCount7d = ms.RepoCount7d
-		if ms.LastSyncAt != nil {
-			data.LastSyncAt = *ms.LastSyncAt
-		}
-	}
-	if today, ok := dashboard["today"].(map[string]interface{}); ok {
-		data.ActivityCount = toInt(today["activityCount"])
-		data.PromptCount = toInt(today["promptCount"])
-		data.FileCount = toInt(today["fileCount"])
-		data.TodayLastUpdatedAt = toString(today["lastUpdatedAt"])
-	}
-
-	return data
-}
-
-func renderResult(c *gin.Context, status int, title, message, resultStatus, linkURL, linkText string) {
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.Status(status)
-	data := deviceResultPageData{
-		Title:    title,
-		Message:  message,
-		Status:   resultStatus,
-		LinkURL:  linkURL,
-		LinkText: linkText,
-	}
-	if err := templates.ExecuteTemplate(c.Writer, "device_result.html", data); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
-	}
-}
-
-func renderLoginRequired(c *gin.Context) {
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.Status(http.StatusUnauthorized)
-	if err := templates.ExecuteTemplate(c.Writer, "login_required.html", nil); err != nil {
-		c.String(http.StatusInternalServerError, "Template error: %v", err)
-	}
-}
-
-func toFloat(v interface{}) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case int:
-		return float64(n)
-	case int64:
-		return float64(n)
-	default:
-		return 0
-	}
-}
-
-func toInt(v interface{}) int {
-	switch n := v.(type) {
-	case int:
-		return n
-	case int64:
-		return int(n)
-	case float64:
-		return int(n)
-	default:
-		return 0
-	}
-}
-
-func toString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	if s, ok := v.(*string); ok && s != nil {
-		return *s
-	}
-	return fmt.Sprintf("%v", v)
-}
-
-func handleLoginPage() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		if err := templates.ExecuteTemplate(c.Writer, "login.html", nil); err != nil {
-			c.String(http.StatusInternalServerError, "Template error: %v", err)
-		}
-	}
-}
-
 func adminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user, exists := c.Get("user")
@@ -723,6 +364,3 @@ func bootstrapAdminUser(ctx context.Context, userSvc *service.UserService, cfg *
 
 	log.Printf("Initial admin user '%s' created successfully", username)
 }
-
-// suppress unused import warnings
-var _ = os.Getenv
