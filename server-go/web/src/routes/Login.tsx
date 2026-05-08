@@ -3,6 +3,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { authApi } from "../api/auth";
 
+function safeRedirect(value: string | null): string {
+  if (!value) return "/me";
+  // Only allow same-origin absolute paths: starts with single / and is not protocol-relative
+  if (!value.startsWith("/") || value.startsWith("//")) return "/me";
+  return value;
+}
+
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,7 +17,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const redirect = params.get("redirect") ?? "/me";
+  const redirect = safeRedirect(params.get("redirect"));
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
