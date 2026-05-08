@@ -1,10 +1,10 @@
-export interface MeResponse {
+export interface User {
   id: string;
   email: string;
   name: string;
   role: string;
-  personal_org_id: string;
-  orgs: Array<{
+  personal_org_id?: string;
+  orgs?: Array<{
     org_id: string;
     org_name: string;
     org_slug: string;
@@ -12,9 +12,17 @@ export interface MeResponse {
   }>;
 }
 
+export interface MeApiResponse {
+  success: boolean;
+  user: User;
+  dashboard: DashboardStats;
+  recentAuthorship: unknown[];
+  totalAuthorshipRecords: number;
+}
+
 export interface DashboardStats {
   aiCode?: { percentage: number; totalAddedLines: number; committedAiLines: number };
-  aiOutput?: { generated: number; edited: number };
+  aiOutput?: { generated: number; committed: number; edited: number; ratio: number };
   leaders?: {
     topAgent?: { label: string; promptCount: number };
     topModel?: { label: string; promptCount: number };

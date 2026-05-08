@@ -81,10 +81,12 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"user": gin.H{
-			"id":    userID,
-			"email": userMap["email"],
-			"name":  userMap["name"],
-			"role":  userMap["role"],
+			"id":              userID,
+			"email":           userMap["email"],
+			"name":            userMap["name"],
+			"role":            userMap["role"],
+			"personal_org_id": userMap["personal_org_id"],
+			"orgs":            userMap["orgs"],
 		},
 		"dashboard":              dashboard,
 		"recentAuthorship":       records,
