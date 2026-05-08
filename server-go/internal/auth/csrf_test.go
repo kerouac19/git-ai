@@ -53,6 +53,10 @@ func TestClearCSRFCookie(t *testing.T) {
 	if !strings.Contains(got, "Max-Age=0") {
 		t.Fatalf("clear cookie must have Max-Age=0: %q", got)
 	}
+	prod := ClearCSRFCookie(true)
+	if !strings.Contains(prod, "Secure") {
+		t.Fatalf("production cleared cookie must have Secure: %q", prod)
+	}
 }
 
 func TestExtractCSRFTokenFromCookie(t *testing.T) {
