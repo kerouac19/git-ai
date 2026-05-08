@@ -96,3 +96,25 @@ func TestCSRFRejectsEmptyTokenEvenIfMatching(t *testing.T) {
 		t.Fatalf("status=%d, want 403 (empty token must not pass)", w.Code)
 	}
 }
+
+func TestCSRFBlocksUnsafeWithNoCookieHeader(t *testing.T) {
+	r := newCSRFRouter()
+	req := httptest.NewRequest(http.MethodPost, "/post", strings.NewReader(""))
+	// no Cookie header, no X-CSRF-Token header
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status=%d, want 403 (no cookie at all)", w.Code)
+	}
+}
+
+func TestCSRFDoesNotSkipForNonBearerAuth(t *testing.T) {
+	r := newCSRFRouter()
+	req := httptest.NewRequest(http.MethodPost, "/post", strings.NewReader(""))
+	req.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status=%d, want 403 (Basic auth must not bypass CSRF)", w.Code)
+	}
+}

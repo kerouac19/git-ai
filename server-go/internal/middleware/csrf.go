@@ -30,7 +30,7 @@ func CSRFProtect() gin.HandlerFunc {
 		headerToken := c.GetHeader("X-CSRF-Token")
 		if cookieToken == "" || headerToken == "" ||
 			subtle.ConstantTimeCompare([]byte(cookieToken), []byte(headerToken)) != 1 {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "csrf token missing or mismatched"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "CSRF token missing or mismatched"})
 			return
 		}
 		c.Next()
