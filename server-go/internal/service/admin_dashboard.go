@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"git-ai-server/internal/model"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
@@ -174,9 +172,6 @@ func (s *AdminDashboardService) getTopUsers(ctx context.Context, days int) ([]mo
 }
 
 func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]model.AdminTopOrg, error) {
-	// Best-effort: if org_memberships or orgs tables don't exist or schema
-	// differs, return empty rather than failing the whole dashboard. The
-	// caller can adapt the JOIN once real org schema is confirmed.
 	rows, err := s.Pool.Query(ctx, fmt.Sprintf(`
 		select
 			o.id::text,
@@ -184,26 +179,18 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 			coalesce(count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> ''), 0) as prompt_count,
 			count(distinct e.user_id) as member_count
 		from public.metrics_events e
-		join public.org_memberships m on m.user_id::text = e.user_id
-		join public.orgs o on o.id = m.org_id
+		join public.users u on u.id::text = e.user_id
+		join public.orgs o on o.id = u.org_id
 		where e.event_timestamp >= now() - interval '%d days'
 		group by o.id, o.name
 		order by prompt_count desc, member_count desc, o.id asc
 		limit 10
 	`, days))
 	if err != nil {
-		// Honor context cancellation — let the errgroup unwind quickly.
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
-		// 42P01 (undefined_table) is the expected schema-drift case when
-		// org_memberships/orgs aren't deployed yet — stay silent. Other
-		// DB errors are unexpected and worth logging.
-		var pgErr *pgconn.PgError
-		if !errors.As(err, &pgErr) || pgErr.Code != "42P01" {
-			log.Printf("[admin dashboard] getTopOrgs: %v", err)
-		}
-		return []model.AdminTopOrg{}, nil
+		return nil, fmt.Errorf("admin top orgs: %w", err)
 	}
 	defer rows.Close()
 
