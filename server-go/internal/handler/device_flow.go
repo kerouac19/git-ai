@@ -93,6 +93,25 @@ func (h *DeviceFlowHandler) Approve(c *gin.Context) {
 		return
 	}
 
+	// Look up current state first so we can correctly map already-handled codes.
+	current, err := h.Svc.GetDeviceCodeByUserCode(c.Request.Context(), body.UserCode)
+	if err != nil {
+		Internal(c, err)
+		return
+	}
+	if current == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "device code not found or expired"})
+		return
+	}
+	if current.Status == "denied" {
+		c.JSON(http.StatusConflict, gin.H{"error": "device code already denied"})
+		return
+	}
+	if current.Status == "approved" {
+		c.JSON(http.StatusOK, gin.H{"status": "approved"})
+		return
+	}
+
 	realSubject := auth.TokenSubject{
 		Sub:           claims.Subject,
 		Email:         claims.Email,
@@ -113,10 +132,6 @@ func (h *DeviceFlowHandler) Approve(c *gin.Context) {
 	}
 	if entry == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "device code not found or expired"})
-		return
-	}
-	if entry.Status == "denied" {
-		c.JSON(http.StatusConflict, gin.H{"error": "device code already denied"})
 		return
 	}
 
