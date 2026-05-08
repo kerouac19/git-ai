@@ -1,0 +1,11 @@
+server-go/web/src/api/auth.ts
+  ai_agent 1-23
+server-go/web/src/routes/Login.tsx
+  ai_agent 1-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "85e1b781086a7646e5bb2bf88aff32c0bb87866e",
+  "prompts": {}
+}
