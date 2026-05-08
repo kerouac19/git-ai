@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
@@ -21,11 +20,9 @@ type AdminDashboardHandler struct {
 	Svc AdminDashboardSvc
 }
 
-var validAdminRanges = map[string]bool{"7d": true, "30d": true}
-
 func (h *AdminDashboardHandler) GetGlobalStats(c *gin.Context) {
 	rangeKey := c.DefaultQuery("range", "7d")
-	if !validAdminRanges[rangeKey] {
+	if rangeKey != "7d" && rangeKey != "30d" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": "invalid range; expected 7d or 30d",
 		})
@@ -35,10 +32,6 @@ func (h *AdminDashboardHandler) GetGlobalStats(c *gin.Context) {
 	data, err := h.Svc.GetGlobalStats(c.Request.Context(), rangeKey)
 	if err != nil {
 		Internal(c, err)
-		return
-	}
-	if data == nil {
-		Internal(c, errors.New("admin dashboard service returned nil data"))
 		return
 	}
 
