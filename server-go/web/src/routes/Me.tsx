@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { authApi } from "../api/auth";
 import type { DashboardStats, User } from "../types/api";
@@ -82,6 +82,15 @@ function MeContent({ user, dashboard }: { user: User; dashboard: DashboardStats 
           </div>
         </div>
       </div>
+
+      {user.role === "admin" && (
+        <Link to="/admin/activity" className="card admin-entry-card" style={{ marginTop: 16, display: "block" }}>
+          <h2 style={{ margin: 0 }}>管理员看板</h2>
+          <p className="muted" style={{ margin: "4px 0 0 0" }}>
+            查看平台全局活跃度统计 →
+          </p>
+        </Link>
+      )}
 
       {/* ── Metrics grid ─────────────────────────────────────── */}
       <div className="metrics-grid" style={{ marginTop: 24 }}>

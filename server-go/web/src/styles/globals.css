@@ -594,3 +594,83 @@ button:disabled {
   padding: 11px 24px;
   margin-top: 4px;
 }
+
+/* ==========================================================================
+   Admin activity dashboard  (.admin-page__, .admin-*)
+   ========================================================================== */
+.admin-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.admin-range-toggle {
+  display: inline-flex;
+  background: var(--panel);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-range-toggle button {
+  padding: 6px 14px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.admin-range-toggle button.active {
+  background: var(--accent, #6366f1);
+  color: #fff;
+}
+
+.admin-range-toggle button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-summary {
+  margin-top: 24px;
+}
+
+.admin-page__chart-stack {
+  display: grid;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.admin-leaderboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.875rem;
+}
+
+.admin-leaderboard__table th,
+.admin-leaderboard__table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.admin-leaderboard__table th {
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.admin-entry-card {
+  text-decoration: none;
+  color: inherit;
+  border-left: 3px solid var(--accent, #6366f1);
+}
+
+.admin-entry-card:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
