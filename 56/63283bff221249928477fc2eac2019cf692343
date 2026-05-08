@@ -1,0 +1,13 @@
+server-go/web/src/App.tsx
+  ai_agent 1-6,8-16
+server-go/web/src/components/ProtectedRoute.tsx
+  ai_agent 1-25
+server-go/web/src/hooks/useMe.ts
+  ai_agent 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "5663283bff221249928477fc2eac2019cf692343",
+  "prompts": {}
+}
