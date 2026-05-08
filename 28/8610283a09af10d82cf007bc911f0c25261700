@@ -1,0 +1,13 @@
+server-go/web/src/routes/DeviceFlow.tsx
+  ai_agent 1-81
+server-go/web/src/routes/DeviceResult.tsx
+  ai_agent 1-21
+server-go/web/src/api/device.ts
+  ai_agent 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "288610283a09af10d82cf007bc911f0c25261700",
+  "prompts": {}
+}
