@@ -39,3 +39,61 @@ export interface DeviceFlowInfo {
   authenticated: boolean;
   subject?: { name: string; email: string };
 }
+
+export type AdminRangeKey = "7d" | "30d";
+
+export interface AdminDashboardSummary {
+  activeUsersToday: number;
+  activeUsersInRange: number;
+  totalPrompts: number;
+  totalCheckpoints: number;
+  aiCodePercentage: number;
+}
+
+export interface AdminTrendPoint {
+  date: string;
+  activeUsers: number;
+  promptCount: number;
+  checkpointCount: number;
+  committedAiLines: number;
+  totalAddedLines: number;
+  generatedAiLines: number;
+  editedAiLines: number;
+}
+
+export interface AdminTopUser {
+  userId: string;
+  name: string;
+  email: string;
+  promptCount: number;
+  committedAiLines: number;
+}
+
+export interface AdminTopOrg {
+  orgId: string;
+  orgName: string;
+  promptCount: number;
+  memberCount: number;
+}
+
+export interface AdminDistributionRow {
+  label: string;
+  promptCount: number;
+  share: number;
+}
+
+export interface AdminDashboardData {
+  range: AdminRangeKey;
+  summary: AdminDashboardSummary;
+  trend: AdminTrendPoint[];
+  topUsers: AdminTopUser[];
+  topOrgs: AdminTopOrg[];
+  agentDistribution: AdminDistributionRow[];
+  modelDistribution: AdminDistributionRow[];
+}
+
+export interface AdminDashboardResponse {
+  success: boolean;
+  data: AdminDashboardData;
+  timestamp: string;
+}
