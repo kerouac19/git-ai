@@ -8,6 +8,7 @@ import (
 
 	"git-ai-server/internal/model"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
@@ -195,9 +196,13 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
-		// Tolerate schema drift on org_memberships/orgs by returning empty,
-		// but log so it's visible in operations. The dashboard still loads.
-		log.Printf("[admin dashboard] getTopOrgs: %v", err)
+		// 42P01 (undefined_table) is the expected schema-drift case when
+		// org_memberships/orgs aren't deployed yet — stay silent. Other
+		// DB errors are unexpected and worth logging.
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "42P01" {
+			log.Printf("[admin dashboard] getTopOrgs: %v", err)
+		}
 		return []model.AdminTopOrg{}, nil
 	}
 	defer rows.Close()
