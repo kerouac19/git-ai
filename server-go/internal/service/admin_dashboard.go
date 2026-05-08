@@ -145,14 +145,14 @@ func (s *AdminDashboardService) getTopUsers(ctx context.Context, days int) ([]mo
 	rows, err := s.Pool.Query(ctx, fmt.Sprintf(`
 		select
 			e.user_id,
-			coalesce(u.name, '') as name,
+			coalesce(nullif(u.display_name, ''), u.username, '') as name,
 			coalesce(u.email, '') as email,
 			coalesce(count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> ''), 0) as prompt_count,
 			coalesce(sum((e.values_json->'5'->>0)::int) filter (where e.event_id = 1), 0) as committed_ai
 		from public.metrics_events e
 		left join public.users u on u.id::text = e.user_id
 		where e.event_timestamp >= now() - interval '%d days'
-		group by e.user_id, u.name, u.email
+		group by e.user_id, u.display_name, u.username, u.email
 		order by prompt_count desc, committed_ai desc, e.user_id asc
 		limit 10
 	`, days))
