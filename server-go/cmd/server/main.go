@@ -78,6 +78,7 @@ func main() {
 	authorshipSvc := &service.AuthorshipService{Pool: pool}
 	bundleSvc := &service.BundleService{Pool: pool}
 	dashboardSvc := &service.DashboardService{Pool: pool, MetricsSvc: metricsSvc}
+	adminDashSvc := &service.AdminDashboardService{Pool: pool}
 	sysConfigSvc := &service.SysConfigService{Pool: pool, MasterKey: masterKey}
 
 	deviceFlowSvc := &auth.DeviceFlowService{Pool: pool, JWTSecret: cfg.JWTSecret}
@@ -105,6 +106,7 @@ func main() {
 	bundleH := &handler.BundleHandler{Svc: bundleSvc, TrustProxy: trustProxy}
 	casH := &handler.CasHandler{Svc: casSvc}
 	dashboardH := &handler.DashboardHandler{Svc: dashboardSvc}
+	adminDashH := &handler.AdminDashboardHandler{Svc: adminDashSvc}
 	releaseStore := &service.ReleaseStore{Root: cfg.ReleaseStoragePath}
 	releaseH := &handler.ReleaseHandler{Store: releaseStore}
 	releaseAdminH := &handler.ReleaseAdminHandler{Store: releaseStore}
@@ -215,6 +217,13 @@ func main() {
 			dashboard.GET("/public", dashboardH.GetPublicStats)
 			dashboard.GET("/stats", jwtMW, dashboardH.GetStats)
 			dashboard.POST("/generate-report", jwtMW, csrfMW, dashboardH.GenerateReport)
+		}
+
+		// Admin-only platform-wide dashboard. Reuses the existing adminOnly()
+		// middleware below — non-admin callers get 403, unauthenticated 401.
+		admin := api.Group("/admin", jsonLimit, jwtMW, adminOnly())
+		{
+			admin.GET("/dashboard/stats", adminDashH.GetGlobalStats)
 		}
 
 		// Config (JWT protected)
