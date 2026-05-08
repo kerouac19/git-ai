@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 
 	"git-ai-server/internal/model"
 
@@ -145,7 +147,7 @@ func (s *AdminDashboardService) getTopUsers(ctx context.Context, days int) ([]mo
 			e.user_id,
 			coalesce(u.name, '') as name,
 			coalesce(u.email, '') as email,
-			count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> '') as prompt_count,
+			coalesce(count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> ''), 0) as prompt_count,
 			coalesce(sum((e.values_json->'5'->>0)::int) filter (where e.event_id = 1), 0) as committed_ai
 		from public.metrics_events e
 		left join public.users u on u.id::text = e.user_id
@@ -178,7 +180,7 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 		select
 			o.id::text,
 			coalesce(o.name, '') as org_name,
-			count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> '') as prompt_count,
+			coalesce(count(distinct e.attrs_json->>'22') filter (where e.event_id = 2 and coalesce(e.attrs_json->>'22', '') <> ''), 0) as prompt_count,
 			count(distinct e.user_id) as member_count
 		from public.metrics_events e
 		join public.org_memberships m on m.user_id::text = e.user_id
@@ -189,7 +191,13 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 		limit 10
 	`, days))
 	if err != nil {
-		// Tolerate schema drift — log and return empty.
+		// Honor context cancellation — let the errgroup unwind quickly.
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
+		// Tolerate schema drift on org_memberships/orgs by returning empty,
+		// but log so it's visible in operations. The dashboard still loads.
+		log.Printf("[admin dashboard] getTopOrgs: %v", err)
 		return []model.AdminTopOrg{}, nil
 	}
 	defer rows.Close()
@@ -206,8 +214,12 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 }
 
 // getDistribution computes prompt-count share grouped by attrs_json->>attrKey.
-// attrKey "20" = agent, "21" = model.
+// attrKey must be "20" (agent) or "21" (model) — anything else is a bug
+// in the caller and rejected to keep the value out of the SQL format string.
 func (s *AdminDashboardService) getDistribution(ctx context.Context, days int, attrKey string) ([]model.AdminDistributionRow, error) {
+	if attrKey != "20" && attrKey != "21" {
+		return nil, fmt.Errorf("admin distribution: invalid attrKey %q", attrKey)
+	}
 	rows, err := s.Pool.Query(ctx, fmt.Sprintf(`
 		select
 			coalesce(nullif(attrs_json->>'%s', ''), '(unknown)') as label,
