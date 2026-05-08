@@ -99,6 +99,7 @@ func main() {
 		CasSvc:        casSvc,
 		DeviceFlowSvc: deviceFlowSvc,
 		MetricsSvc:    metricsSvc,
+		UserSvc:       userSvc,
 		TrustProxy:    trustProxy,
 		Commit:        commitHash,
 	}

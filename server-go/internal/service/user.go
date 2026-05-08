@@ -79,3 +79,22 @@ func scanUser(row pgx.Row) (*model.User, error) {
 	}
 	return &u, nil
 }
+
+// GetUserOrg returns the user's org id and name via JOIN. Returns ("", "", nil)
+// if the user does not exist (caller decides how to handle missing user — typically
+// already gated by JWT auth so this is rare).
+func (s *UserService) GetUserOrg(ctx context.Context, userID string) (string, string, error) {
+	var orgID, orgName string
+	err := s.Pool.QueryRow(ctx, `
+		SELECT o.id::text, o.name
+		FROM users u
+		JOIN orgs o ON o.id = u.org_id
+		WHERE u.id = $1`, userID).Scan(&orgID, &orgName)
+	if err == pgx.ErrNoRows {
+		return "", "", nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("getting user org: %w", err)
+	}
+	return orgID, orgName, nil
+}

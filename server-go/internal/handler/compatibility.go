@@ -20,6 +20,7 @@ type CompatibilityHandler struct {
 	CasSvc        *service.CasService
 	DeviceFlowSvc *auth.DeviceFlowService
 	MetricsSvc    *service.MetricsService
+	UserSvc       *service.UserService
 	TrustProxy    bool
 	Commit        string
 }
@@ -78,6 +79,12 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 		return
 	}
 
+	orgID, orgName, err := h.UserSvc.GetUserOrg(c.Request.Context(), userID)
+	if err != nil {
+		Internal(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"user": gin.H{
@@ -91,6 +98,10 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 		"dashboard":              dashboard,
 		"recentAuthorship":       records,
 		"totalAuthorshipRecords": total,
+		"org": gin.H{
+			"id":   orgID,
+			"name": orgName,
+		},
 	})
 }
 
