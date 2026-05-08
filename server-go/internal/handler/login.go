@@ -82,7 +82,14 @@ func (h *LoginHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.Header("Set-Cookie", auth.SerializeSessionCookie(accessToken, int(loginAccessTokenTTL.Seconds()), h.IsProduction))
+	csrfToken, err := auth.GenerateCSRFToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to issue token"})
+		return
+	}
+
+	c.Writer.Header().Add("Set-Cookie", auth.SerializeSessionCookie(accessToken, int(loginAccessTokenTTL.Seconds()), h.IsProduction))
+	c.Writer.Header().Add("Set-Cookie", auth.SerializeCSRFCookie(csrfToken, int(loginAccessTokenTTL.Seconds()), h.IsProduction))
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -99,15 +106,13 @@ func (h *LoginHandler) Login(c *gin.Context) {
 		"expires_in":         int(loginAccessTokenTTL.Seconds()),
 		"refresh_token":      refreshToken,
 		"refresh_expires_in": int(loginRefreshTokenTTL.Seconds()),
+		"csrf_token":         csrfToken,
 	})
 }
 
 func (h *LoginHandler) Logout(c *gin.Context) {
-	c.Header("Set-Cookie", auth.ClearSessionCookie(h.IsProduction))
-	if strings.Contains(c.GetHeader("Accept"), "text/html") {
-		c.Redirect(http.StatusSeeOther, "/login")
-		return
-	}
+	c.Writer.Header().Add("Set-Cookie", auth.ClearSessionCookie(h.IsProduction))
+	c.Writer.Header().Add("Set-Cookie", auth.ClearCSRFCookie(h.IsProduction))
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Logged out"})
 }
 
