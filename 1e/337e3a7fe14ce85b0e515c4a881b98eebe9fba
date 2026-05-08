@@ -1,0 +1,11 @@
+server-go/internal/auth/csrf.go
+  ai_agent 1-56
+server-go/internal/auth/csrf_test.go
+  ai_agent 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "1e337e3a7fe14ce85b0e515c4a881b98eebe9fba",
+  "prompts": {}
+}
