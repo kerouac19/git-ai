@@ -18,7 +18,7 @@ ENV_FILE="/opt/git-ai/.env"
 LOG_DIR="/opt/git-ai/logs"
 SERVICE_NAME="git-ai"
 BINARY_NAME="git-ai-server"
-PORT=5000
+PORT=3000
 STOP_TIMEOUT=15
 
 # 构建产物路径（相对于 server-go/）
@@ -78,10 +78,17 @@ cmd_build() {
     fi
 
     mkdir -p bin
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-        go build -ldflags="-s -w" -o "${BUILD_OUTPUT}" ./cmd/server
 
-    ok "构建完成: $(pwd)/${BUILD_OUTPUT} ($(du -h "${BUILD_OUTPUT}" | cut -f1))"
+    # 注入 git commit hash，让 /api/version 能反映线上跑的是哪一版。
+    # 不在 git 仓库内（例如 tarball 构建）时回退到 "unknown"。
+    local commit
+    commit=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+        go build -ldflags="-s -w -X main.commitHash=${commit}" \
+        -o "${BUILD_OUTPUT}" ./cmd/server
+
+    ok "构建完成: $(pwd)/${BUILD_OUTPUT} ($(du -h "${BUILD_OUTPUT}" | cut -f1)) commit=${commit}"
     echo ""
     info "下一步: 将 ${BUILD_OUTPUT} 和此脚本传到目标服务器，然后运行:"
     echo "  sudo bash deploy.sh install"

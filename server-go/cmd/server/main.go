@@ -33,6 +33,14 @@ var templateFS embed.FS
 
 var templates *template.Template
 
+// commitHash is overridden at build time via:
+//
+//	go build -ldflags="-X main.commitHash=$(git rev-parse --short HEAD)"
+//
+// scripts/deploy.sh build does this automatically. Falls back to "dev" so
+// `go run ./cmd/server` still works.
+var commitHash = "dev"
+
 func init() {
 	funcMap := template.FuncMap{
 		"printf": fmt.Sprintf,
@@ -108,6 +116,7 @@ func main() {
 		DeviceFlowSvc: deviceFlowSvc,
 		MetricsSvc:    metricsSvc,
 		TrustProxy:    trustProxy,
+		Commit:        commitHash,
 	}
 	authorshipH := &handler.AuthorshipHandler{Svc: authorshipSvc}
 	bundleH := &handler.BundleHandler{Svc: bundleSvc, TrustProxy: trustProxy}

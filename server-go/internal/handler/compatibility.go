@@ -21,6 +21,7 @@ type CompatibilityHandler struct {
 	DeviceFlowSvc *auth.DeviceFlowService
 	MetricsSvc    *service.MetricsService
 	TrustProxy    bool
+	Commit        string
 }
 
 func (h *CompatibilityHandler) GetStatus(c *gin.Context) {
@@ -34,6 +35,7 @@ func (h *CompatibilityHandler) GetStatus(c *gin.Context) {
 		"status":      "ok",
 		"service":     "git-ai-private-deploy-server",
 		"version":     "1.0.0",
+		"commit":      h.Commit,
 		"modules":     []string{"authorship", "cas", "dashboard", "config"},
 		"publicStats": publicStats,
 	})
@@ -42,6 +44,7 @@ func (h *CompatibilityHandler) GetStatus(c *gin.Context) {
 func (h *CompatibilityHandler) GetVersion(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"version": "1.0.0",
+		"commit":  h.Commit,
 		"service": "git-ai-private-deploy-server",
 	})
 }
