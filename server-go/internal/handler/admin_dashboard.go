@@ -10,8 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AdminDashboardSvc is the surface AdminDashboardHandler depends on. Defined
-// here so tests can swap in a fake without touching the real DB.
+// AdminDashboardSvc is the surface the dashboard handler depends on. Defined
+// here so tests can swap in a fake without touching the real DB. (Type name
+// is preserved for now; renaming is deferred churn.)
 type AdminDashboardSvc interface {
 	GetGlobalStats(ctx context.Context, rangeKey string) (*model.AdminDashboardData, error)
 }
@@ -20,6 +21,8 @@ type AdminDashboardHandler struct {
 	Svc AdminDashboardSvc
 }
 
+// GetGlobalStats returns the cross-user/cross-org dashboard payload to any
+// authenticated user. Routed at GET /api/dashboard/global.
 func (h *AdminDashboardHandler) GetGlobalStats(c *gin.Context) {
 	rangeKey := c.DefaultQuery("range", "7d")
 	if rangeKey != "7d" && rangeKey != "30d" {

@@ -32,7 +32,7 @@ func newAdminDashTestRouter(svc AdminDashboardSvc) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	h := &AdminDashboardHandler{Svc: svc}
-	r.GET("/api/admin/dashboard/stats", h.GetGlobalStats)
+	r.GET("/api/dashboard/global", h.GetGlobalStats)
 	return r
 }
 
@@ -42,7 +42,7 @@ func TestAdminDashboard_DefaultRange(t *testing.T) {
 	}
 	r := newAdminDashTestRouter(fake)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -58,7 +58,7 @@ func TestAdminDashboard_ExplicitRange30d(t *testing.T) {
 	fake := &fakeAdminDashSvc{data: &model.AdminDashboardData{Range: "30d"}}
 	r := newAdminDashTestRouter(fake)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats?range=30d", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global?range=30d", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -74,7 +74,7 @@ func TestAdminDashboard_InvalidRange(t *testing.T) {
 	fake := &fakeAdminDashSvc{}
 	r := newAdminDashTestRouter(fake)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats?range=42d", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global?range=42d", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -90,7 +90,7 @@ func TestAdminDashboard_ServiceError(t *testing.T) {
 	fake := &fakeAdminDashSvc{err: errors.New("db blew up")}
 	r := newAdminDashTestRouter(fake)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -116,7 +116,7 @@ func TestAdminDashboard_ResponseShape(t *testing.T) {
 	}
 	r := newAdminDashTestRouter(fake)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/dashboard/stats", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

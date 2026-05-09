@@ -212,19 +212,14 @@ func main() {
 		}
 
 		// Dashboard. Public stats stay open; per-user stats require a
-		// session and always map to the caller's own sub.
+		// session and always map to the caller's own sub. /global returns
+		// the same cross-user/cross-org payload to any authenticated user.
 		dashboard := api.Group("/dashboard", jsonLimit)
 		{
 			dashboard.GET("/public", dashboardH.GetPublicStats)
 			dashboard.GET("/stats", jwtMW, dashboardH.GetStats)
 			dashboard.POST("/generate-report", jwtMW, csrfMW, dashboardH.GenerateReport)
-		}
-
-		// Admin-only platform-wide dashboard. Reuses the existing adminOnly()
-		// middleware below — non-admin callers get 403, unauthenticated 401.
-		admin := api.Group("/admin", jsonLimit, jwtMW, adminOnly())
-		{
-			admin.GET("/dashboard/stats", adminDashH.GetGlobalStats)
+			dashboard.GET("/global", jwtMW, adminDashH.GetGlobalStats)
 		}
 
 		// Config (JWT protected)

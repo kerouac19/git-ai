@@ -1,6 +1,6 @@
 package model
 
-// AdminDashboardData is the payload returned by GET /api/admin/dashboard/stats.
+// AdminDashboardData is the payload returned by GET /api/dashboard/global.
 // All numeric fields default to zero and all slices default to empty (never
 // nil) so the SPA can render unconditionally.
 type AdminDashboardData struct {
