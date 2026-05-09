@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import Layout from "./components/Layout";
 import Login from "./routes/Login";
 import Me from "./routes/Me";
 import DeviceFlow from "./routes/DeviceFlow";
@@ -11,19 +12,32 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/me" element={<Me />} />
       <Route path="/oauth/device" element={<DeviceFlow />} />
       <Route path="/oauth/device/result" element={<DeviceResult />} />
+      
+      {/* Authenticated routes with Sidebar Layout */}
+      <Route
+        path="/me"
+        element={
+          <Layout>
+            <Me />
+          </Layout>
+        }
+      />
       <Route
         path="/dashboard"
         element={
-          <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
-            <Dashboard />
-          </Suspense>
+          <Layout>
+            <Suspense fallback={<div className="page-main"><p className="muted">加载中…</p></div>}>
+              <Dashboard />
+            </Suspense>
+          </Layout>
         }
       />
+
       <Route path="/admin/activity" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/me" replace />} />
     </Routes>
   );
 }
+

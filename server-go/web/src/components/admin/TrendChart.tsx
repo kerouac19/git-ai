@@ -18,20 +18,24 @@ export default function TrendChart({ data }: Props) {
         <div style={{ width: "100%", height: 280 }}>
           <ResponsiveContainer>
             <LineChart data={data} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={{ stroke: "var(--border)" }} />
+              <Tooltip 
+                contentStyle={{ background: "var(--bg-card)", borderColor: "var(--border)", borderRadius: "8px", color: "var(--text-main)" }}
+                itemStyle={{ fontSize: "12px" }}
+              />
+              <Legend iconType="circle" />
               <Line
                 yAxisId="left"
                 type="monotone"
                 dataKey="activeUsers"
                 name="活跃用户"
-                stroke="#6366f1"
-                strokeWidth={2}
+                stroke="var(--accent)"
+                strokeWidth={2.5}
                 dot={false}
+                activeDot={{ r: 4, strokeWidth: 0 }}
               />
               <Line
                 yAxisId="right"
@@ -39,10 +43,12 @@ export default function TrendChart({ data }: Props) {
                 dataKey="promptCount"
                 name="Prompt 数"
                 stroke="#22c55e"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 dot={false}
+                activeDot={{ r: 4, strokeWidth: 0 }}
               />
             </LineChart>
+
           </ResponsiveContainer>
         </div>
       )}
