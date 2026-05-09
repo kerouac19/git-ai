@@ -3,5 +3,5 @@ import type { AdminDashboardResponse, AdminRangeKey } from "../types/api";
 
 export const adminApi = {
   fetchDashboard: (range: AdminRangeKey) =>
-    api.get<AdminDashboardResponse>(`/api/admin/dashboard/stats?range=${range}`),
+    api.get<AdminDashboardResponse>(`/api/dashboard/global?range=${range}`),
 };
