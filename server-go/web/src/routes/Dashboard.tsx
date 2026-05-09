@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { adminApi } from "../api/admin";
-import { ApiError } from "../api/client";
-import type { AdminDashboardData, AdminRangeKey, User } from "../types/api";
+import type { AdminDashboardData, AdminRangeKey } from "../types/api";
 
 import RangeToggle from "../components/admin/RangeToggle";
 import SummaryCards from "../components/admin/SummaryCards";
@@ -14,39 +13,26 @@ import DistributionDonut from "../components/admin/DistributionDonut";
 
 type FetchState =
   | { status: "loading" }
-  | { status: "error"; message: string; forbidden?: boolean }
+  | { status: "error"; message: string }
   | { status: "ready"; data: AdminDashboardData };
 
-function AdminActivityContent({ user }: { user: User }) {
+function DashboardContent() {
   const [range, setRange] = useState<AdminRangeKey>("7d");
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<FetchState>({ status: "loading" });
 
   useEffect(() => {
-    if (user.role !== "admin") return;
     let cancelled = false;
     setState({ status: "loading" });
     adminApi.fetchDashboard(range)
       .then(res => { if (!cancelled) setState({ status: "ready", data: res.data }); })
       .catch(err => {
         if (cancelled) return;
-        if (err instanceof ApiError && err.status === 403) {
-          setState({ status: "error", message: "您没有权限访问此页面。", forbidden: true });
-          return;
-        }
         const message = err instanceof Error ? err.message : "未知错误";
         setState({ status: "error", message });
       });
     return () => { cancelled = true; };
-  }, [range, user.role, tick]);
-
-  if (user.role !== "admin") {
-    return <Navigate to="/me" replace />;
-  }
-
-  if (state.status === "error" && state.forbidden) {
-    return <Navigate to="/me" replace />;
-  }
+  }, [range, tick]);
 
   const rangeLabel = range === "7d" ? "7 天" : "30 天";
 
@@ -55,7 +41,7 @@ function AdminActivityContent({ user }: { user: User }) {
       <div className="panel">
         <div className="admin-page__header">
           <div>
-            <h1 style={{ margin: 0 }}>平台活跃度看板</h1>
+            <h1 style={{ margin: 0 }}>团队看板</h1>
             <p className="muted" style={{ margin: "4px 0 0 0" }}>
               全平台聚合数据 · <Link to="/me">返回个人页</Link>
             </p>
@@ -71,7 +57,7 @@ function AdminActivityContent({ user }: { user: User }) {
           <p className="muted" style={{ marginTop: 24 }}>加载中…</p>
         )}
 
-        {state.status === "error" && !state.forbidden && (
+        {state.status === "error" && (
           <div className="card" style={{ marginTop: 24 }}>
             <p style={{ color: "var(--danger)" }}>加载失败: {state.message}</p>
             <button type="button" onClick={() => setTick(t => t + 1)}>重试</button>
@@ -119,10 +105,10 @@ function AdminActivityContent({ user }: { user: User }) {
   );
 }
 
-export default function AdminActivity() {
+export default function Dashboard() {
   return (
     <ProtectedRoute>
-      {({ user }) => <AdminActivityContent user={user} />}
+      {() => <DashboardContent />}
     </ProtectedRoute>
   );
 }

@@ -5,7 +5,7 @@ import Me from "./routes/Me";
 import DeviceFlow from "./routes/DeviceFlow";
 import DeviceResult from "./routes/DeviceResult";
 
-const AdminActivity = lazy(() => import("./routes/AdminActivity"));
+const Dashboard = lazy(() => import("./routes/Dashboard"));
 
 export default function App() {
   return (
@@ -15,13 +15,14 @@ export default function App() {
       <Route path="/oauth/device" element={<DeviceFlow />} />
       <Route path="/oauth/device/result" element={<DeviceResult />} />
       <Route
-        path="/admin/activity"
+        path="/dashboard"
         element={
           <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
-            <AdminActivity />
+            <Dashboard />
           </Suspense>
         }
       />
+      <Route path="/admin/activity" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/me" replace />} />
     </Routes>
   );
