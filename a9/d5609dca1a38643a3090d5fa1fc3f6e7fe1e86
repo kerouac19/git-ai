@@ -1,0 +1,11 @@
+server-go/web/src/App.tsx
+  ai_agent 8,18,21,25
+server-go/web/src/routes/Me.tsx
+  ai_agent 84-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "a9d5609dca1a38643a3090d5fa1fc3f6e7fe1e86",
+  "prompts": {}
+}
