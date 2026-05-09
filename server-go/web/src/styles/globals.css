@@ -590,7 +590,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   Admin activity dashboard  (.admin-page__, .admin-*)
+   Team dashboard  (.admin-page__, .admin-* — class names preserved per spec)
    ========================================================================== */
 .admin-page__header {
   display: flex;
