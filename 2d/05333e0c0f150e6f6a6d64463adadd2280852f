@@ -1,0 +1,9 @@
+server-go/web/src/styles/globals.css
+  ai_agent 593
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "2d05333e0c0f150e6f6a6d64463adadd2280852f",
+  "prompts": {}
+}
