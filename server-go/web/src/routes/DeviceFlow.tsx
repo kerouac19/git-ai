@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { deviceApi } from "../api/device";
 import type { DeviceFlowInfo } from "../types/api";
+import { formatLocalDateTime } from "../utils/datetime";
 
 export default function DeviceFlow() {
   const [params] = useSearchParams();
@@ -97,7 +98,7 @@ export default function DeviceFlow() {
           </div>
           <div className="card">
             <h2>过期时间</h2>
-            <p>{info.expires_at ?? "n/a"}</p>
+            <p>{formatLocalDateTime(info.expires_at)}</p>
           </div>
           <div className="card">
             <h2>状态</h2>

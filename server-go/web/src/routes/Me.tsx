@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { authApi } from "../api/auth";
 import type { DashboardStats, User } from "../types/api";
+import { formatLocalDateTime } from "../utils/datetime";
 
 function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardStats; org?: { id: string; name: string } }) {
   const ai    = dashboard.aiCode;
@@ -43,7 +44,7 @@ function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardS
               {hasSynced ? "正在同步" : "未连接"}
             </div>
             <p className="me-page__sync-time" style={{ marginTop: 8, fontSize: "0.75rem", textAlign: "right" }}>
-              最后同步: {ms?.lastSyncAt ?? "—"}
+              最后同步: {formatLocalDateTime(ms?.lastSyncAt)}
             </p>
           </div>
         </div>
@@ -165,7 +166,7 @@ function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardS
         <div className="me-page__today-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>今日动态概览</h2>
           <span className="muted" style={{ fontSize: "0.75rem" }}>
-            更新时间: {today?.lastUpdatedAt ?? "—"}
+            更新时间: {formatLocalDateTime(today?.lastUpdatedAt)}
           </span>
         </div>
         {(today?.activityCount ?? 0) > 0 ? (
