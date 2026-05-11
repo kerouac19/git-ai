@@ -1,0 +1,15 @@
+server-go/internal/middleware/security_headers.go
+  ai_agent 9,24,39-43,47-48
+server-go/cmd/server/main.go
+  ai_agent 121,123
+server-go/internal/middleware/https_redirect.go
+  ai_agent 17,24
+server-go/internal/middleware/security_headers_test.go
+  ai_agent 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4e605cdbc6782195ad206c47f7a17d02418b08ed",
+  "prompts": {}
+}
