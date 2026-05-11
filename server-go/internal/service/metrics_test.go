@@ -151,7 +151,6 @@ func TestUploadBatchPopulatesAllAttrColumns(t *testing.T) {
 	}
 
 	pool := openTestPool(t)
-	defer pool.Close()
 
 	svc := &MetricsService{Pool: pool}
 
@@ -233,6 +232,74 @@ func TestUploadBatchPopulatesAllAttrColumns(t *testing.T) {
 	}
 }
 
+func TestUploadBatchLeavesMissingAttrsAsNull(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration: requires running PostgreSQL")
+	}
+
+	pool := openTestPool(t)
+
+	svc := &MetricsService{Pool: pool}
+
+	// Only mandatory attr (git_ai_version) is set; all others omitted.
+	batch := &model.MetricsBatch{
+		V: 1,
+		Events: []model.MetricsEvent{
+			{
+				IsObject: true,
+				T:        1715000000,
+				E:        5,
+				V:        map[string]any{"0": "session-started"},
+				A:        map[string]any{"0": "1.4.7"},
+			},
+		},
+	}
+
+	errs, err := svc.UploadBatch(t.Context(), "00000000-0000-0000-0000-000000000001", nil, batch)
+	if err != nil {
+		t.Fatalf("UploadBatch() error = %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("UploadBatch() errors = %+v, want empty", errs)
+	}
+
+	row := pool.QueryRow(t.Context(), `
+		SELECT git_ai_version,
+		       author, commit_sha, base_commit_sha, branch,
+		       tool, model, external_session_id,
+		       session_id, trace_id, parent_session_id,
+		       external_parent_session_id, custom_attributes
+		  FROM metrics_events
+		 ORDER BY received_at DESC
+		 LIMIT 1`)
+
+	var version *string
+	nullables := make([]*string, 12)
+	scanArgs := []any{&version}
+	for i := range nullables {
+		scanArgs = append(scanArgs, &nullables[i])
+	}
+	if err := row.Scan(scanArgs...); err != nil {
+		t.Fatalf("scanning inserted row: %v", err)
+	}
+
+	if version == nil || *version != "1.4.7" {
+		t.Fatalf("git_ai_version = %v, want \"1.4.7\"", version)
+	}
+
+	names := []string{
+		"author", "commit_sha", "base_commit_sha", "branch",
+		"tool", "model", "external_session_id",
+		"session_id", "trace_id", "parent_session_id",
+		"external_parent_session_id", "custom_attributes",
+	}
+	for i, p := range nullables {
+		if p != nil {
+			t.Errorf("%s = %q, want NULL", names[i], *p)
+		}
+	}
+}
+
 func openTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	dsn := os.Getenv("METRICS_TEST_DATABASE_URL")
@@ -243,6 +310,7 @@ func openTestPool(t *testing.T) *pgxpool.Pool {
 	if err != nil {
 		t.Fatalf("pgxpool.New: %v", err)
 	}
+	t.Cleanup(func() { pool.Close() })
 
 	if err := database.RunMigrations(dsn); err != nil {
 		t.Fatalf("RunMigrations: %v", err)
