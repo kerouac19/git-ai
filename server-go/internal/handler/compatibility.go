@@ -239,6 +239,12 @@ func (h *CompatibilityHandler) UploadWorkerCas(c *gin.Context) {
 			Objects []service.CasUploadRequest `json:"objects"`
 		}
 		if err := c.ShouldBindJSON(&body); err == nil && len(body.Objects) > 0 {
+			if len(body.Objects) > 100 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": "A maximum of 100 objects is supported per request",
+				})
+				return
+			}
 			result, err := h.CasSvc.UploadObjects(c.Request.Context(), body.Objects)
 			if err != nil {
 				Internal(c, err)
