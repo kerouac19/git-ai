@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -62,5 +63,53 @@ func TestWorkerAuthMiddlewareRejectsInvalidAPIKey(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d", rec.Code)
+	}
+}
+
+func TestJWTAuthMiddlewareRejectsRefreshToken(t *testing.T) {
+	secret := "test-secret"
+	subject := TokenSubject{Sub: "user-123", Email: "u@example.com", Name: "u", Role: "user"}
+
+	refreshToken, err := SignRefreshToken(subject, secret, time.Hour)
+	if err != nil {
+		t.Fatalf("SignRefreshToken: %v", err)
+	}
+
+	r := gin.New()
+	r.GET("/protected", JWTAuthMiddleware(secret), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+refreshToken)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401 (refresh token must not authenticate); body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestWorkerAuthMiddlewareRejectsRefreshToken(t *testing.T) {
+	secret := "test-secret"
+	subject := TokenSubject{Sub: "user-123", Email: "u@example.com", Name: "u", Role: "user"}
+
+	refreshToken, err := SignRefreshToken(subject, secret, time.Hour)
+	if err != nil {
+		t.Fatalf("SignRefreshToken: %v", err)
+	}
+
+	r := gin.New()
+	r.GET("/worker-protected", WorkerAuthMiddleware(secret, nil, TokenSubject{}), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/worker-protected", nil)
+	req.Header.Set("Authorization", "Bearer "+refreshToken)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401 (refresh token must not authenticate worker route); body=%s", rec.Code, rec.Body.String())
 	}
 }

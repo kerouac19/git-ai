@@ -20,6 +20,10 @@ func JWTAuthMiddleware(secret string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
+		if claims.Type != "" && claims.Type != "access" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
 
 		c.Set("user", gin.H{
 			"id":              claims.Subject,
@@ -47,9 +51,11 @@ func WorkerAuthMiddleware(secret string, apiKeys []string, apiKeySubject TokenSu
 		tokenString := extractToken(c)
 		if tokenString != "" {
 			if claims, err := VerifyToken(tokenString, secret); err == nil {
-				setUserFromClaims(c, claims)
-				c.Next()
-				return
+				if claims.Type == "" || claims.Type == "access" {
+					setUserFromClaims(c, claims)
+					c.Next()
+					return
+				}
 			}
 		}
 
