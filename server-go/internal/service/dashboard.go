@@ -163,7 +163,7 @@ func (s *DashboardService) getOverview(ctx context.Context, userID string) (map[
 			coalesce(sum((values_json->'5'->>0)::int) filter (where event_id = 1), 0) as committed_ai_lines,
 			coalesce(sum((values_json->'7'->>0)::int) filter (where event_id = 1), 0) as generated_ai_lines,
 			coalesce(sum((values_json->'4'->>0)::int) filter (where event_id = 1), 0) as edited_ai_lines,
-			coalesce(count(distinct attrs_json->>'22') filter (where event_id = 2 and coalesce(attrs_json->>'22', '') <> ''), 0) as active_prompts,
+			coalesce(count(distinct coalesce(session_id, attrs_json->>'24')) filter (where event_id = 2 and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''), 0) as active_prompts,
 			coalesce(count(*) filter (where event_id = 4), 0) as checkpoint_files
 		from public.metrics_events
 		where user_id = $1
@@ -189,12 +189,12 @@ func (s *DashboardService) getTopAgent(ctx context.Context, userID string) (map[
 	err := s.Pool.QueryRow(ctx, `
 		select
 			nullif(attrs_json->>'20', '') as label,
-			count(distinct attrs_json->>'22') as prompt_count
+			count(distinct coalesce(session_id, attrs_json->>'24')) as prompt_count
 		from public.metrics_events
 		where user_id = $1
 			and event_id = 2
 			and event_timestamp >= now() - interval '7 days'
-			and coalesce(attrs_json->>'22', '') <> ''
+			and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''
 		group by 1
 		order by 2 desc, 1 asc
 		limit 1
@@ -218,12 +218,12 @@ func (s *DashboardService) getTopModel(ctx context.Context, userID string) (map[
 	err := s.Pool.QueryRow(ctx, `
 		select
 			nullif(attrs_json->>'21', '') as label,
-			count(distinct attrs_json->>'22') as prompt_count
+			count(distinct coalesce(session_id, attrs_json->>'24')) as prompt_count
 		from public.metrics_events
 		where user_id = $1
 			and event_id = 2
 			and event_timestamp >= now() - interval '7 days'
-			and coalesce(attrs_json->>'22', '') <> ''
+			and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''
 		group by 1
 		order by 2 desc, 1 asc
 		limit 1
@@ -247,7 +247,7 @@ func (s *DashboardService) getTodaySummary(ctx context.Context, userID string) (
 	err := s.Pool.QueryRow(ctx, `
 		select
 			coalesce(count(*) filter (where event_id in (2, 4) and event_timestamp >= date_trunc('day', now())), 0) as activity_count,
-			coalesce(count(distinct attrs_json->>'22') filter (where event_id = 2 and event_timestamp >= date_trunc('day', now()) and coalesce(attrs_json->>'22', '') <> ''), 0) as prompt_count,
+			coalesce(count(distinct coalesce(session_id, attrs_json->>'24')) filter (where event_id = 2 and event_timestamp >= date_trunc('day', now()) and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''), 0) as prompt_count,
 			coalesce(count(distinct values_json->>'2') filter (where event_id = 4 and event_timestamp >= date_trunc('day', now()) and coalesce(values_json->>'2', '') <> ''), 0) as file_count,
 			max(received_at) as last_updated_at
 		from public.metrics_events
