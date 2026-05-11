@@ -34,7 +34,7 @@ func TestValidateBatchShapeAcceptsCurrentMetricsSchema(t *testing.T) {
 					"20": "claude-code",
 					"21": "gpt-5.4",
 					"22": "prompt-123",
-					"23": "external-prompt-123",
+					"23": "external-session-123",
 					"30": "{\"workspace\":\"smoke\"}",
 				},
 			},

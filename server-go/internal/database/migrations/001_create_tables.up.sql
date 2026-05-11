@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS metrics_events (
     tool TEXT,
     model TEXT,
     prompt_id TEXT,
-    external_prompt_id TEXT,
+    external_session_id TEXT,
     received_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_metrics_events_user_id ON metrics_events (user_id);

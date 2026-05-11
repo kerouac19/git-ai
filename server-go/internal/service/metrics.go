@@ -129,7 +129,7 @@ func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinc
 				"event_timestamp", "event_id",
 				"values_json", "attrs_json",
 				"git_ai_version", "repo_url",
-				"tool", "model", "prompt_id", "external_prompt_id",
+				"tool", "model", "prompt_id", "external_session_id",
 			},
 			pgx.CopyFromRows(validRows),
 		)
