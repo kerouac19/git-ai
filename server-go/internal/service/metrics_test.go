@@ -106,3 +106,37 @@ func TestUploadBatchReturnsEmptyErrorsSlice(t *testing.T) {
 		t.Fatalf("UploadBatch() errors length = %d, want 0", len(errors))
 	}
 }
+
+func TestValidateEventAcceptsSessionEvent(t *testing.T) {
+	svc := &MetricsService{}
+
+	batch, err := svc.ValidateBatchShape(map[string]any{
+		"v": float64(1),
+		"events": []any{
+			map[string]any{
+				"t": float64(1712000000),
+				"e": float64(5), // SessionEvent
+				"v": map[string]any{
+					"0": "session-started",
+				},
+				"a": map[string]any{
+					"0":  "1.4.7",
+					"1":  "https://github.com/test/repo",
+					"23": "external-session-abc",
+					"24": "session-123",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("ValidateBatchShape() error = %v", err)
+	}
+
+	if len(batch.Events) != 1 {
+		t.Fatalf("ValidateBatchShape() events = %d, want 1", len(batch.Events))
+	}
+
+	if errMsg := validateEvent(batch.Events[0]); errMsg != "" {
+		t.Fatalf("validateEvent(SessionEvent) error = %q, want empty (event_id=5 should be supported)", errMsg)
+	}
+}

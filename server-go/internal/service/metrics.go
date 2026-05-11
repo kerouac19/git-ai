@@ -19,7 +19,7 @@ const (
 	supportedSchemaVersion = 1
 )
 
-var supportedEventIDs = map[int]bool{1: true, 2: true, 3: true, 4: true}
+var supportedEventIDs = map[int]bool{1: true, 2: true, 3: true, 4: true, 5: true}
 
 type MetricsUploadError struct {
 	Index int    `json:"index"`
