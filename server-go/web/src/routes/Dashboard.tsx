@@ -113,7 +113,7 @@ function DashboardContent() {
               rows={state.data.topUsers}
               columns={[
                 { header: "用户", render: (r) => r.name || r.email || r.userId },
-                { header: "会话", render: (r) => r.promptCount.toLocaleString(), align: "right" },
+                { header: "会话数", render: (r) => r.promptCount.toLocaleString(), align: "right" },
                 { header: "AI 行数", render: (r) => r.committedAiLines.toLocaleString(), align: "right" },
               ]}
             />
@@ -122,7 +122,7 @@ function DashboardContent() {
               rows={state.data.topOrgs}
               columns={[
                 { header: "组织", render: (r) => r.orgName || r.orgId },
-                { header: "会话", render: (r) => r.promptCount.toLocaleString(), align: "right" },
+                { header: "会话数", render: (r) => r.promptCount.toLocaleString(), align: "right" },
                 { header: "成员", render: (r) => r.memberCount.toLocaleString(), align: "right" },
               ]}
             />
@@ -131,6 +131,10 @@ function DashboardContent() {
           <div className="grid">
             <DistributionDonut title="Agent 分布" rows={state.data.agentDistribution} />
             <DistributionDonut title="模型分布" rows={state.data.modelDistribution} />
+          </div>
+
+          <div className="grid">
+            <DistributionDonut title="Checkpoint 类型分布" rows={state.data.checkpointByEditKind} />
           </div>
         </div>
       )}
