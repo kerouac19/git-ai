@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -156,5 +157,25 @@ func TestDeviceFlowHandler_DenySuccess(t *testing.T) {
 	}
 	if !svc.denyCalled {
 		t.Fatalf("Deny not called")
+	}
+}
+
+func TestDeny_RequiresAuthenticatedCaller(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+
+	// Mount with jwtMW + the actual handler; do NOT inject any token.
+	jwtMW := auth.JWTAuthMiddleware("test-secret")
+	h := &DeviceFlowHandler{} // service-less; jwtMW should short-circuit before handler runs
+	r.POST("/deny", jwtMW, h.Deny)
+
+	body := []byte(`{"user_code":"ABCD-EFGH"}`)
+	req := httptest.NewRequest(http.MethodPost, "/deny", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401 (Deny must reject unauthenticated callers); body=%s", rec.Code, rec.Body.String())
 	}
 }

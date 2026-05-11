@@ -179,7 +179,7 @@ func main() {
 		{
 			device.GET("/info", deviceFlowH.Info)
 			device.POST("/approve", csrfMW, deviceFlowH.Approve)
-			device.POST("/deny", csrfMW, deviceFlowH.Deny)
+			device.POST("/deny", jwtMW, csrfMW, deviceFlowH.Deny)
 		}
 
 		// User auth
