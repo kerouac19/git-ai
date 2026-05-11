@@ -1,0 +1,17 @@
+server-go/internal/database/migrations/006_rename_external_prompt_id_to_external_session_id.up.sql
+  ai_agent 1-19
+server-go/internal/database/migrations/006_rename_external_prompt_id_to_external_session_id.down.sql
+  ai_agent 1-11
+server-go/internal/service/metrics.go
+  ai_agent 132
+server-go/internal/service/metrics_test.go
+  ai_agent 37
+server-go/internal/database/migrations/001_create_tables.up.sql
+  ai_agent 77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "a294bd8b395449aca755cf426129f5c9e61e98a0",
+  "prompts": {}
+}
