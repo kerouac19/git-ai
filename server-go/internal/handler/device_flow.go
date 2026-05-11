@@ -87,6 +87,12 @@ func (h *DeviceFlowHandler) Approve(c *gin.Context) {
 		return
 	}
 
+	// Route-level jwtMW already enforced authentication; the cookie probe
+	// here additionally requires a browser session because Approve binds
+	// the caller's full Subject/Email/Role/Orgs onto the device code. A
+	// Bearer-token caller (e.g. CLI worker) would pass jwtMW but fail
+	// here — by design, device authorization must originate from a real
+	// human session.
 	claims := h.claimsFromCookie(c)
 	if claims == nil || claims.Subject == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "login required"})

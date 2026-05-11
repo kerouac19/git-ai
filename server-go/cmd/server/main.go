@@ -178,7 +178,7 @@ func main() {
 		device := api.Group("/oauth/device", jsonLimit)
 		{
 			device.GET("/info", deviceFlowH.Info)
-			device.POST("/approve", csrfMW, deviceFlowH.Approve)
+			device.POST("/approve", jwtMW, csrfMW, deviceFlowH.Approve)
 			device.POST("/deny", jwtMW, csrfMW, deviceFlowH.Deny)
 		}
 
