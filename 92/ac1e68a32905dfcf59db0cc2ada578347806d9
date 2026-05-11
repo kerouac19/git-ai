@@ -1,0 +1,17 @@
+server-go/internal/database/migrations/008_cas_entries_metadata.up.sql
+  ai_agent 1-6
+server-go/internal/database/migrations/001_create_tables.up.sql
+  ai_agent 28
+server-go/internal/database/migrations/008_cas_entries_metadata.down.sql
+  ai_agent 1-2
+server-go/internal/service/cas_test.go
+  ai_agent 1-63
+server-go/internal/service/cas.go
+  ai_agent 63,94-101,103-105,137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "92ac1e68a32905dfcf59db0cc2ada578347806d9",
+  "prompts": {}
+}
