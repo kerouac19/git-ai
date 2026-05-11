@@ -48,6 +48,20 @@ type AdminTopOrg struct {
 	MemberCount int    `json:"memberCount"`
 }
 
+// AdminDistributionRow is a generic "label + count + share" row used by
+// multiple admin dashboard distributions:
+//
+//   - AgentDistribution / ModelDistribution: PromptCount is the number of
+//     distinct prompt_id values bucketed under the label (agent / model).
+//   - CheckpointByEditKind: PromptCount is the count of checkpoint events
+//     bucketed under the label (edit_kind = "file_edit" / "bash" /
+//     "(unknown)"). Despite the field name, no prompt aggregation is
+//     involved in that context — the type is reused so the frontend can
+//     pipe each distribution through the same donut/bar component
+//     (DistributionDonut keys off "promptCount" regardless of source).
+//
+// Renaming PromptCount to Count would be cleaner but breaks the frontend
+// JSON contract; this comment is the lighter-weight fix.
 type AdminDistributionRow struct {
 	Label       string  `json:"label"`
 	PromptCount int     `json:"promptCount"`
