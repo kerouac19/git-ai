@@ -1,0 +1,11 @@
+server-go/cmd/server/main.go
+  ai_agent 182
+server-go/internal/handler/device_flow_test.go
+  ai_agent 4,162-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "3472ee080c11b89420d07f6670767b07d1aa4f88",
+  "prompts": {}
+}
