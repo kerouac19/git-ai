@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS cas_entries (
     hash TEXT NOT NULL UNIQUE,
     encrypted_content TEXT NOT NULL,
     content_type TEXT NOT NULL DEFAULT 'text/plain',
+    metadata JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

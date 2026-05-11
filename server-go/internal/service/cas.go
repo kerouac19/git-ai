@@ -60,7 +60,7 @@ type CasService struct {
 	CASKey string
 }
 
-func (s *CasService) UploadObject(ctx context.Context, hash string, content any) (string, error) {
+func (s *CasService) UploadObject(ctx context.Context, hash string, content any, metadata map[string]string) (string, error) {
 	h := strings.TrimSpace(strings.ToLower(hash))
 
 	var exists bool
@@ -91,10 +91,18 @@ func (s *CasService) UploadObject(ctx context.Context, hash string, content any)
 		return "", fmt.Errorf("encrypting content: %w", err)
 	}
 
+	var metadataJSON []byte
+	if len(metadata) > 0 {
+		metadataJSON, err = json.Marshal(metadata)
+		if err != nil {
+			return "", fmt.Errorf("serializing metadata: %w", err)
+		}
+	}
+
 	_, err = s.Pool.Exec(ctx,
-		`INSERT INTO cas_entries (id, hash, encrypted_content, content_type, created_at)
-		 VALUES (gen_random_uuid(), $1, $2, $3, now())`,
-		h, encrypted, "application/json",
+		`INSERT INTO cas_entries (id, hash, encrypted_content, content_type, metadata, created_at)
+		 VALUES (gen_random_uuid(), $1, $2, $3, $4, now())`,
+		h, encrypted, "application/json", metadataJSON,
 	)
 	if err != nil {
 		return "", fmt.Errorf("inserting cas entry: %w", err)
@@ -126,7 +134,7 @@ func (s *CasService) UploadObjects(ctx context.Context, objects []CasUploadReque
 			continue
 		}
 
-		if _, err := s.UploadObject(ctx, h, obj.Content); err != nil {
+		if _, err := s.UploadObject(ctx, h, obj.Content, obj.Metadata); err != nil {
 			results = append(results, CasUploadStatus{
 				Hash:   h,
 				Status: "error",
