@@ -72,7 +72,7 @@ func (s *AdminDashboardService) getSummary(ctx context.Context, days int) (model
 		select
 			coalesce(count(distinct user_id) filter (where event_timestamp >= date_trunc('day', now())), 0) as active_today,
 			coalesce(count(distinct user_id), 0) as active_in_range,
-			coalesce(count(distinct coalesce(session_id, attrs_json->>'24')) filter (where event_id = 2 and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''), 0) as total_prompts,
+			coalesce(count(distinct coalesce(session_id, attrs_json->>'24')) filter (where event_id = 2 and coalesce(session_id, attrs_json->>'24') <> ''), 0) as total_prompts,
 			coalesce(count(*) filter (where event_id = 4), 0) as total_checkpoints,
 			coalesce(sum((values_json->>'2')::int) filter (where event_id = 1), 0) as total_added,
 			coalesce(sum((values_json->'5'->>0)::int) filter (where event_id = 1), 0) as committed_ai
@@ -107,7 +107,7 @@ func (s *AdminDashboardService) getTrend(ctx context.Context, days int) ([]model
 		select
 			d.day::text,
 			coalesce(count(distinct e.user_id), 0) as active_users,
-			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(coalesce(e.session_id, e.attrs_json->>'24'), '') <> ''), 0) as prompt_count,
+			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(e.session_id, e.attrs_json->>'24') <> ''), 0) as prompt_count,
 			coalesce(count(*) filter (where e.event_id = 4), 0) as checkpoint_count,
 			coalesce(sum((e.values_json->'5'->>0)::int) filter (where e.event_id = 1), 0) as committed_ai,
 			coalesce(sum((e.values_json->>'2')::int) filter (where e.event_id = 1), 0) as total_added,
@@ -149,7 +149,7 @@ func (s *AdminDashboardService) getTopUsers(ctx context.Context, days int) ([]mo
 			e.user_id,
 			coalesce(nullif(u.display_name, ''), u.username, '') as name,
 			coalesce(u.email, '') as email,
-			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(coalesce(e.session_id, e.attrs_json->>'24'), '') <> ''), 0) as prompt_count,
+			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(e.session_id, e.attrs_json->>'24') <> ''), 0) as prompt_count,
 			coalesce(sum((e.values_json->'5'->>0)::int) filter (where e.event_id = 1), 0) as committed_ai
 		from public.metrics_events e
 		left join public.users u on u.id::text = e.user_id
@@ -179,7 +179,7 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 		select
 			o.id::text,
 			coalesce(o.name, '') as org_name,
-			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(coalesce(e.session_id, e.attrs_json->>'24'), '') <> ''), 0) as prompt_count,
+			coalesce(count(distinct coalesce(e.session_id, e.attrs_json->>'24')) filter (where e.event_id = 2 and coalesce(e.session_id, e.attrs_json->>'24') <> ''), 0) as prompt_count,
 			count(distinct e.user_id) as member_count
 		from public.metrics_events e
 		join public.users u on u.id::text = e.user_id
@@ -274,7 +274,7 @@ func (s *AdminDashboardService) getDistribution(ctx context.Context, days int, a
 		from public.metrics_events
 		where event_id = 2
 			and event_timestamp >= now() - interval '%d days'
-			and coalesce(coalesce(session_id, attrs_json->>'24'), '') <> ''
+			and coalesce(session_id, attrs_json->>'24') <> ''
 		group by 1
 		order by prompt_count desc, label asc
 	`, attrKey, days))
