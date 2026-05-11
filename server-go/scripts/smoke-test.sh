@@ -309,7 +309,7 @@ STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   -d '{
     "v": 1,
     "events": [
-      {"t": 1712000000, "e": 1, "v": {"2": 100, "4": [10], "5": [42], "7": [60], "10": 1711999000, "11": "feat: smoke", "12": "sync latest metrics schema"}, "a": {"0": "1.2.8", "1": "https://github.com/test/repo", "2": "dev@example.com", "3": "abc123", "4": "base456", "5": "main", "20": "claude-code", "21": "gpt-5.4", "22": "prompt-123", "23": "external-prompt-123", "30": "{\"workspace\":\"smoke\"}"}},
+      {"t": 1712000000, "e": 1, "v": {"2": 100, "4": [10], "5": [42], "7": [60], "10": 1711999000, "11": "feat: smoke", "12": "sync latest metrics schema"}, "a": {"0": "1.2.8", "1": "https://github.com/test/repo", "2": "dev@example.com", "3": "abc123", "4": "base456", "5": "main", "20": "claude-code", "21": "gpt-5.4", "22": "prompt-123", "23": "external-session-123", "30": "{\"workspace\":\"smoke\"}"}},
       {"t": 1712000001, "e": 2, "v": {}, "a": {"0": "1.2.8", "20": "cursor", "21": "claude-3.5", "22": "prompt-456", "30": "{\"source\":\"smoke-test\"}"}},
       {"t": 1712000002, "e": 4, "v": {"2": "src/main.rs"}, "a": {"0": "0.1.0"}}
     ]
