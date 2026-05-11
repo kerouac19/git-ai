@@ -22,7 +22,7 @@ export default function SummaryCards({ summary, rangeLabel }: Props) {
       value: String(summary.activeUsersInRange),
     },
     {
-      label: `${rangeLabel}总 Prompt`,
+      label: `${rangeLabel}总会话数`,
       value: summary.totalPrompts.toLocaleString(),
     },
     {

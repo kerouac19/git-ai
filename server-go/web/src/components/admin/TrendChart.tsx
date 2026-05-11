@@ -41,7 +41,7 @@ export default function TrendChart({ data }: Props) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="promptCount"
-                name="Prompt 数"
+                name="会话数"
                 stroke="#22c55e"
                 strokeWidth={2.5}
                 dot={false}

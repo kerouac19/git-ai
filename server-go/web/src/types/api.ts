@@ -91,6 +91,7 @@ export interface AdminDashboardData {
   topOrgs: AdminTopOrg[];
   agentDistribution: AdminDistributionRow[];
   modelDistribution: AdminDistributionRow[];
+  checkpointByEditKind: AdminDistributionRow[];
 }
 
 export interface AdminDashboardResponse {

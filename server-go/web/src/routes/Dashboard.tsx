@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { adminApi } from "../api/admin";
 import type { AdminDashboardData, AdminRangeKey } from "../types/api";
@@ -114,7 +113,7 @@ function DashboardContent() {
               rows={state.data.topUsers}
               columns={[
                 { header: "用户", render: (r) => r.name || r.email || r.userId },
-                { header: "Prompt", render: (r) => r.promptCount.toLocaleString(), align: "right" },
+                { header: "会话", render: (r) => r.promptCount.toLocaleString(), align: "right" },
                 { header: "AI 行数", render: (r) => r.committedAiLines.toLocaleString(), align: "right" },
               ]}
             />
@@ -123,7 +122,7 @@ function DashboardContent() {
               rows={state.data.topOrgs}
               columns={[
                 { header: "组织", render: (r) => r.orgName || r.orgId },
-                { header: "Prompt", render: (r) => r.promptCount.toLocaleString(), align: "right" },
+                { header: "会话", render: (r) => r.promptCount.toLocaleString(), align: "right" },
                 { header: "成员", render: (r) => r.memberCount.toLocaleString(), align: "right" },
               ]}
             />

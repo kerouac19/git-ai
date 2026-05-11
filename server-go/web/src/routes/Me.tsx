@@ -1,6 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
-import { authApi } from "../api/auth";
 import type { DashboardStats, User } from "../types/api";
 import { formatLocalDateTime } from "../utils/datetime";
 
@@ -94,10 +92,10 @@ function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardS
         </div>
 
         <div className="card">
-          <p className="metric-label">活跃 Prompt 数</p>
+          <p className="metric-label">活跃会话数</p>
           <p className="kpi">{act?.activePromptCount ?? "—"}</p>
           <p className="muted" style={{ fontSize: "0.75rem", margin: "8px 0 0" }}>
-            过去 7 天内独立 Prompt 统计
+            过去 7 天内独立会话统计
           </p>
         </div>
 
@@ -171,7 +169,7 @@ function MeContent({ user, dashboard, org }: { user: User; dashboard: DashboardS
         </div>
         {(today?.activityCount ?? 0) > 0 ? (
           <p style={{ margin: 0 }}>
-            今日已有 <strong>{today!.activityCount}</strong> 条活动记录，涵盖 <strong>{today!.promptCount}</strong> 个 Prompt 及 <strong>{today!.fileCount}</strong> 个文件。
+            今日已有 <strong>{today!.activityCount}</strong> 条活动记录，涵盖 <strong>{today!.promptCount}</strong> 个会话及 <strong>{today!.fileCount}</strong> 个文件。
           </p>
         ) : (
           <p style={{ margin: 0 }}>今日暂无活跃数据同步。</p>
