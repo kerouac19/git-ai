@@ -1,0 +1,9 @@
+server-go/internal/auth/middleware_test.go
+  ai_agent 116-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "11d46f3a7f5bee94b70381175aba1dfbd2f9a72e",
+  "prompts": {}
+}
