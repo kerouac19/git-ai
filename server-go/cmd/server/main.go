@@ -118,9 +118,9 @@ func main() {
 	r := gin.Default()
 
 	// Global middleware
-	r.Use(middleware.SecurityHeadersMiddleware())
+	r.Use(middleware.SecurityHeadersMiddleware(trustProxy))
 	if cfg.HTTPSRedirect {
-		r.Use(middleware.HTTPSRedirectMiddleware())
+		r.Use(middleware.HTTPSRedirectMiddleware(trustProxy))
 	}
 
 	// Global body cap MUST come before AuditMiddleware: audit calls

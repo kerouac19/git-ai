@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SecurityHeadersMiddleware() gin.HandlerFunc {
+func SecurityHeadersMiddleware(trustProxy bool) gin.HandlerFunc {
 	csp := strings.Join([]string{
 		"default-src 'self'",
 		"script-src 'self' 'unsafe-inline'",
@@ -21,7 +21,7 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h := c.Writer.Header()
 
-		if isSecure(c) {
+		if isSecure(c, trustProxy) {
 			h.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 		}
 
@@ -36,9 +36,16 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 	}
 }
 
-func isSecure(c *gin.Context) bool {
+// isSecure reports whether the request was received over TLS. When trustProxy
+// is true, the X-Forwarded-Proto header is also honored — operators must
+// explicitly opt in via TRUST_PROXY=true (or numeric hop count) so that an
+// attacker cannot spoof "https" upstream over plain HTTP.
+func isSecure(c *gin.Context, trustProxy bool) bool {
 	if c.Request.TLS != nil {
 		return true
+	}
+	if !trustProxy {
+		return false
 	}
 	proto := c.GetHeader("X-Forwarded-Proto")
 	for _, p := range strings.Split(proto, ",") {

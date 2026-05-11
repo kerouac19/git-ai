@@ -14,14 +14,14 @@ var healthPaths = map[string]struct{}{
 	"/livez":   {},
 }
 
-func HTTPSRedirectMiddleware() gin.HandlerFunc {
+func HTTPSRedirectMiddleware(trustProxy bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if _, skip := healthPaths[c.Request.URL.Path]; skip {
 			c.Next()
 			return
 		}
 
-		if !isSecure(c) {
+		if !isSecure(c, trustProxy) {
 			host := c.Request.Host
 			if host != "" {
 				target := fmt.Sprintf("https://%s%s", host, c.Request.RequestURI)
