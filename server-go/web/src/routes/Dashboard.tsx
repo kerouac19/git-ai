@@ -47,6 +47,10 @@ function DashboardSkeleton() {
           <div className="card"><Skeleton height={200} /></div>
           <div className="card"><Skeleton height={200} /></div>
         </div>
+
+        <div className="grid">
+          <div className="card"><Skeleton height={200} /></div>
+        </div>
       </div>
     </div>
   );
