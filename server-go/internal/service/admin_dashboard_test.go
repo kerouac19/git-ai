@@ -47,7 +47,8 @@ func TestGetSummaryCountsBySessionId(t *testing.T) {
 		t.Fatalf("Summary.TotalPrompts = %d, want 2 (distinct session_ids); attrs[\"22\"] is empty so old SQL would return 0", data.Summary.TotalPrompts)
 	}
 
-	// Agent distribution: 2 sessions under claude-code (s1), 1 under cursor (s2)
+	// Agent distribution: 1 distinct session under claude-code (s1, 2 events),
+	// 1 distinct session under cursor (s2, 1 event).
 	agents := map[string]int{}
 	for _, row := range data.AgentDistribution {
 		agents[row.Label] = row.PromptCount
