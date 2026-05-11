@@ -1,0 +1,11 @@
+server-go/internal/auth/middleware.go
+  ai_agent 23-26,54-58
+server-go/internal/auth/middleware_test.go
+  ai_agent 7,68-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "dacc100f270746aecd5ebed212f78ee6d8f0029a",
+  "prompts": {}
+}
