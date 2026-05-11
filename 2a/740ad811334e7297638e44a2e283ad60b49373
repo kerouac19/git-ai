@@ -1,0 +1,11 @@
+server-go/internal/handler/compatibility_test.go
+  ai_agent 1-45
+server-go/internal/handler/compatibility.go
+  ai_agent 242-247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "2a740ad811334e7297638e44a2e283ad60b49373",
+  "prompts": {}
+}
