@@ -1,0 +1,17 @@
+server-go/web/src/types/api.ts
+  ai_agent 94
+server-go/web/src/components/admin/TrendChart.tsx
+  ai_agent 44
+server-go/web/src/routes/Me.tsx
+  ai_agent 95,98,172
+server-go/web/src/routes/Dashboard.tsx
+  ai_agent 116,125
+server-go/web/src/components/admin/SummaryCards.tsx
+  ai_agent 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d7265aa28503f2211e5f144b3921c94028aa2995",
+  "prompts": {}
+}
