@@ -111,12 +111,20 @@ func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinc
 			event.E,
 			valuesJSON,
 			attrsJSON,
-			asNullableString(event.A["0"]),
-			asNullableString(event.A["1"]),
-			asNullableString(event.A["20"]),
-			asNullableString(event.A["21"]),
-			asNullableString(event.A["22"]),
-			asNullableString(event.A["23"]),
+			asNullableString(event.A["0"]),  // git_ai_version
+			asNullableString(event.A["1"]),  // repo_url
+			asNullableString(event.A["2"]),  // author
+			asNullableString(event.A["3"]),  // commit_sha
+			asNullableString(event.A["4"]),  // base_commit_sha
+			asNullableString(event.A["5"]),  // branch
+			asNullableString(event.A["20"]), // tool
+			asNullableString(event.A["21"]), // model
+			asNullableString(event.A["23"]), // external_session_id
+			asNullableString(event.A["24"]), // session_id
+			asNullableString(event.A["25"]), // trace_id
+			asNullableString(event.A["26"]), // parent_session_id
+			asNullableString(event.A["27"]), // external_parent_session_id
+			asNullableString(event.A["30"]), // custom_attributes (raw JSON string)
 		})
 	}
 
@@ -129,7 +137,10 @@ func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinc
 				"event_timestamp", "event_id",
 				"values_json", "attrs_json",
 				"git_ai_version", "repo_url",
-				"tool", "model", "prompt_id", "external_session_id",
+				"author", "commit_sha", "base_commit_sha", "branch",
+				"tool", "model", "external_session_id",
+				"session_id", "trace_id", "parent_session_id",
+				"external_parent_session_id", "custom_attributes",
 			},
 			pgx.CopyFromRows(validRows),
 		)

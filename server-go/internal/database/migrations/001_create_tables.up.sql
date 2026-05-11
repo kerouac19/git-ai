@@ -71,16 +71,26 @@ CREATE TABLE IF NOT EXISTS metrics_events (
     attrs_json JSONB NOT NULL,
     git_ai_version TEXT,
     repo_url TEXT,
+    author TEXT,
+    commit_sha TEXT,
+    base_commit_sha TEXT,
+    branch TEXT,
     tool TEXT,
     model TEXT,
-    prompt_id TEXT,
     external_session_id TEXT,
+    session_id TEXT,
+    trace_id TEXT,
+    parent_session_id TEXT,
+    external_parent_session_id TEXT,
+    custom_attributes TEXT,
     received_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_metrics_events_user_id ON metrics_events (user_id);
 CREATE INDEX IF NOT EXISTS idx_metrics_events_event_timestamp ON metrics_events (event_timestamp);
 CREATE INDEX IF NOT EXISTS idx_metrics_events_repo_url ON metrics_events (repo_url);
 CREATE INDEX IF NOT EXISTS idx_metrics_events_distinct_id ON metrics_events (distinct_id);
+CREATE INDEX IF NOT EXISTS idx_metrics_events_session_id ON metrics_events (session_id);
+CREATE INDEX IF NOT EXISTS idx_metrics_events_branch ON metrics_events (branch);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
