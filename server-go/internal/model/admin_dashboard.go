@@ -4,13 +4,14 @@ package model
 // All numeric fields default to zero and all slices default to empty (never
 // nil) so the SPA can render unconditionally.
 type AdminDashboardData struct {
-	Range             string                 `json:"range"`
-	Summary           AdminDashboardSummary  `json:"summary"`
-	Trend             []AdminTrendPoint      `json:"trend"`
-	TopUsers          []AdminTopUser         `json:"topUsers"`
-	TopOrgs           []AdminTopOrg          `json:"topOrgs"`
-	AgentDistribution []AdminDistributionRow `json:"agentDistribution"`
-	ModelDistribution []AdminDistributionRow `json:"modelDistribution"`
+	Range                string                 `json:"range"`
+	Summary              AdminDashboardSummary  `json:"summary"`
+	Trend                []AdminTrendPoint      `json:"trend"`
+	TopUsers             []AdminTopUser         `json:"topUsers"`
+	TopOrgs              []AdminTopOrg          `json:"topOrgs"`
+	AgentDistribution    []AdminDistributionRow `json:"agentDistribution"`
+	ModelDistribution    []AdminDistributionRow `json:"modelDistribution"`
+	CheckpointByEditKind []AdminDistributionRow `json:"checkpointByEditKind"`
 }
 
 type AdminDashboardSummary struct {

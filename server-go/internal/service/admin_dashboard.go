@@ -32,12 +32,13 @@ func (s *AdminDashboardService) GetGlobalStats(ctx context.Context, rangeKey str
 	g, ctx := errgroup.WithContext(ctx)
 
 	var (
-		summary  model.AdminDashboardSummary
-		trend    []model.AdminTrendPoint
-		topUsers []model.AdminTopUser
-		topOrgs  []model.AdminTopOrg
-		agents   []model.AdminDistributionRow
-		models   []model.AdminDistributionRow
+		summary   model.AdminDashboardSummary
+		trend     []model.AdminTrendPoint
+		topUsers  []model.AdminTopUser
+		topOrgs   []model.AdminTopOrg
+		agents    []model.AdminDistributionRow
+		models    []model.AdminDistributionRow
+		editKinds []model.AdminDistributionRow
 	)
 
 	g.Go(func() error { var err error; summary, err = s.getSummary(ctx, days); return err })
@@ -46,19 +47,21 @@ func (s *AdminDashboardService) GetGlobalStats(ctx context.Context, rangeKey str
 	g.Go(func() error { var err error; topOrgs, err = s.getTopOrgs(ctx, days); return err })
 	g.Go(func() error { var err error; agents, err = s.getDistribution(ctx, days, "20"); return err })
 	g.Go(func() error { var err error; models, err = s.getDistribution(ctx, days, "21"); return err })
+	g.Go(func() error { var err error; editKinds, err = s.getCheckpointByEditKind(ctx, days); return err })
 
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
 	return &model.AdminDashboardData{
-		Range:             rangeKey,
-		Summary:           summary,
-		Trend:             trend,
-		TopUsers:          topUsers,
-		TopOrgs:           topOrgs,
-		AgentDistribution: agents,
-		ModelDistribution: models,
+		Range:                rangeKey,
+		Summary:              summary,
+		Trend:                trend,
+		TopUsers:             topUsers,
+		TopOrgs:              topOrgs,
+		AgentDistribution:    agents,
+		ModelDistribution:    models,
+		CheckpointByEditKind: editKinds,
 	}, nil
 }
 
@@ -203,6 +206,58 @@ func (s *AdminDashboardService) getTopOrgs(ctx context.Context, days int) ([]mod
 		out = append(out, o)
 	}
 	return out, rows.Err()
+}
+
+// getCheckpointByEditKind groups checkpoint events (event_id=4) by values_json->>'8'
+// (edit_kind: "file_edit" | "bash" | NULL). Reports both labeled buckets so the
+// admin UI can render a stacked bar.
+func (s *AdminDashboardService) getCheckpointByEditKind(ctx context.Context, days int) ([]model.AdminDistributionRow, error) {
+	rows, err := s.Pool.Query(ctx, fmt.Sprintf(`
+		select
+			coalesce(nullif(values_json->>'8', ''), '(unknown)') as label,
+			count(*) as event_count
+		from public.metrics_events
+		where event_id = 4
+			and event_timestamp >= now() - interval '%d days'
+		group by 1
+		order by event_count desc, label asc
+	`, days))
+	if err != nil {
+		return nil, fmt.Errorf("admin checkpoint by edit_kind: %w", err)
+	}
+	defer rows.Close()
+
+	type bucket struct {
+		label string
+		count int
+	}
+	var buckets []bucket
+	var total int
+	for rows.Next() {
+		var b bucket
+		if err := rows.Scan(&b.label, &b.count); err != nil {
+			return nil, fmt.Errorf("admin checkpoint by edit_kind scan: %w", err)
+		}
+		buckets = append(buckets, b)
+		total += b.count
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	out := make([]model.AdminDistributionRow, 0, len(buckets))
+	for _, b := range buckets {
+		share := 0.0
+		if total > 0 {
+			share = float64(b.count) / float64(total)
+		}
+		out = append(out, model.AdminDistributionRow{
+			Label:       b.label,
+			PromptCount: b.count, // reused as event_count; PromptCount field name fits the row shape
+			Share:       share,
+		})
+	}
+	return out, nil
 }
 
 // getDistribution computes prompt-count share grouped by attrs_json->>attrKey.

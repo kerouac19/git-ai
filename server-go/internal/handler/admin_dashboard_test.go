@@ -140,3 +140,47 @@ func TestAdminDashboard_ResponseShape(t *testing.T) {
 		t.Errorf("totalPrompts = %d, want 5", payload.Data.Summary.TotalPrompts)
 	}
 }
+
+func TestAdminDashboard_CheckpointByEditKind(t *testing.T) {
+	fake := &fakeAdminDashSvc{
+		data: &model.AdminDashboardData{
+			Range:                "7d",
+			TopUsers:             []model.AdminTopUser{},
+			TopOrgs:              []model.AdminTopOrg{},
+			AgentDistribution:    []model.AdminDistributionRow{},
+			ModelDistribution:    []model.AdminDistributionRow{},
+			CheckpointByEditKind: []model.AdminDistributionRow{
+				{Label: "file_edit", PromptCount: 2, Share: 0.66},
+				{Label: "bash", PromptCount: 1, Share: 0.33},
+			},
+		},
+	}
+	r := newAdminDashTestRouter(fake)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/dashboard/global", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var payload struct {
+		Success bool                     `json:"success"`
+		Data    model.AdminDashboardData `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal: %v; body=%s", err, w.Body.String())
+	}
+
+	if len(payload.Data.CheckpointByEditKind) != 2 {
+		t.Fatalf("CheckpointByEditKind len = %d, want 2; got=%+v",
+			len(payload.Data.CheckpointByEditKind), payload.Data.CheckpointByEditKind)
+	}
+	if payload.Data.CheckpointByEditKind[0].Label != "file_edit" {
+		t.Errorf("first label = %q, want file_edit", payload.Data.CheckpointByEditKind[0].Label)
+	}
+	if payload.Data.CheckpointByEditKind[0].PromptCount != 2 {
+		t.Errorf("first count = %d, want 2", payload.Data.CheckpointByEditKind[0].PromptCount)
+	}
+}
