@@ -122,6 +122,16 @@ func main() {
 	if cfg.HTTPSRedirect {
 		r.Use(middleware.HTTPSRedirectMiddleware())
 	}
+
+	// Global body cap MUST come before AuditMiddleware: audit calls
+	// io.ReadAll on the request body, so without an early cap an
+	// unauthenticated large POST would buffer unbounded bytes in memory
+	// before any route-level BodyLimit could trim it. Sized at the
+	// largest legitimate route (CAS upload); per-route jsonLimit /
+	// release admin (1 MiB) further tighten because http.MaxBytesReader
+	// only collapses inward.
+	r.Use(middleware.BodyLimit(casUploadLimit))
+
 	r.Use(middleware.AuditMiddleware(pool, trustProxy))
 
 	// CORS
