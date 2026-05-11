@@ -238,16 +238,8 @@ fn remove_global_git_config_section(git_cmd: &str, section: &str) -> Result<(), 
     }
 }
 
-fn maybe_configure_async_mode_daemon_trace2(dry_run: bool) -> Result<(), GitAiError> {
+fn configure_daemon_trace2(dry_run: bool) -> Result<(), GitAiError> {
     let runtime_config = config::Config::fresh();
-
-    if !runtime_config.feature_flags().async_mode {
-        if !dry_run {
-            // Async mode is off — clean up any trace2 config we previously wrote.
-            let _ = remove_global_git_config_section(runtime_config.git_cmd(), "trace2");
-        }
-        return Ok(());
-    }
 
     ensure_global_git_config_dirs()?;
 
@@ -276,38 +268,8 @@ fn maybe_configure_async_mode_daemon_trace2(dry_run: bool) -> Result<(), GitAiEr
     Ok(())
 }
 
-fn maybe_teardown_async_mode(dry_run: bool) {
+fn ensure_daemon(dry_run: bool) {
     if dry_run {
-        return;
-    }
-
-    let runtime_config = config::Config::fresh();
-    if runtime_config.feature_flags().async_mode {
-        return;
-    }
-
-    // Don't touch daemon inside test harnesses
-    if std::env::var_os("GIT_AI_TEST_DB_PATH").is_some()
-        || std::env::var_os("GITAI_TEST_DB_PATH").is_some()
-    {
-        return;
-    }
-
-    // Shut down any leftover daemon from when async_mode was enabled.
-    // Uses stop_daemon which tries soft shutdown then escalates to hard kill.
-    if let Ok(daemon_config) = DaemonConfig::from_env_or_default_paths() {
-        let _ =
-            crate::commands::daemon::stop_daemon(&daemon_config, std::time::Duration::from_secs(5));
-    }
-}
-
-fn maybe_ensure_daemon(dry_run: bool) {
-    if dry_run {
-        return;
-    }
-
-    let runtime_config = config::Config::fresh();
-    if !runtime_config.feature_flags().async_mode {
         return;
     }
 
@@ -337,6 +299,7 @@ pub fn run(args: &[String]) -> Result<HashMap<String, String>, GitAiError> {
     // Parse flags
     let mut dry_run = false;
     let mut verbose = false;
+    let mut install_skills = false;
     for arg in args {
         if arg == "--dry-run" || arg == "--dry-run=true" {
             dry_run = true;
@@ -344,30 +307,31 @@ pub fn run(args: &[String]) -> Result<HashMap<String, String>, GitAiError> {
         if arg == "--verbose" || arg == "-v" {
             verbose = true;
         }
+        if arg == "--skills" {
+            install_skills = true;
+        }
     }
 
-    // In async mode, daemon trace2 config must be in place before any install work starts.
-    // If async mode was disabled, tear down any leftover daemon and trace2 config.
+    // Daemon trace2 config must be in place before any install work starts.
     // Non-fatal: the global git config may be read-only (e.g. Nix store symlink).
-    if let Err(e) = maybe_configure_async_mode_daemon_trace2(dry_run) {
+    if let Err(e) = configure_daemon_trace2(dry_run) {
         eprintln!("Warning: could not configure trace2 (non-fatal): {e}");
     }
-    maybe_teardown_async_mode(dry_run);
-    maybe_ensure_daemon(dry_run);
+    ensure_daemon(dry_run);
 
     // Now that the daemon is (re)started, initialize the telemetry handle so
     // that install-hooks metrics and observability events route through it.
-    if config::Config::get().feature_flags().async_mode && !dry_run {
+    if !dry_run {
         let _ = crate::daemon::telemetry_handle::init_daemon_telemetry_handle();
     }
 
     // Get absolute path to the current binary
     let binary_path = get_current_binary_path()?;
-    persist_install_api_base_config(&binary_path, dry_run)?;
+    persist_install_config(&binary_path, dry_run)?;
     let params = HookInstallerParams { binary_path };
 
     // Run async operations with smol and convert result
-    let statuses = smol::block_on(async_run_install(&params, dry_run, verbose))?;
+    let statuses = smol::block_on(async_run_install(&params, dry_run, verbose, install_skills))?;
 
     // Clean up legacy envelope logs directory and related artifacts.
     // These are no longer used — all telemetry now routes through the daemon.
@@ -378,32 +342,45 @@ pub fn run(args: &[String]) -> Result<HashMap<String, String>, GitAiError> {
     Ok(to_hashmap(statuses))
 }
 
-fn persist_install_api_base_config(binary_path: &Path, dry_run: bool) -> Result<bool, GitAiError> {
+fn persist_install_config(binary_path: &Path, dry_run: bool) -> Result<bool, GitAiError> {
     if dry_run {
         return Ok(false);
     }
 
     let api_base = std::env::var("API_BASE").ok().filter(|s| !s.is_empty());
-    let Some(api_base) = api_base else {
+    let api_key = std::env::var("API_KEY").ok().filter(|s| !s.is_empty());
+
+    if api_base.is_none() && api_key.is_none() {
         return Ok(false);
-    };
+    }
 
     let mut file_config = crate::config::load_file_config_public().map_err(GitAiError::Generic)?;
     let mut changed = false;
 
-    if file_config.api_base_url.as_deref() != Some(api_base.as_str()) {
-        file_config.api_base_url = Some(api_base);
+    if let Some(ref api_base) = api_base
+        && file_config.api_base_url.as_deref() != Some(api_base.as_str())
+    {
+        file_config.api_base_url = Some(api_base.clone());
         changed = true;
     }
 
-    let git_path_missing = file_config
-        .git_path
-        .as_ref()
-        .map(|value| value.trim().is_empty())
-        .unwrap_or(true);
-    if git_path_missing && let Some(git_path) = detect_install_git_path(binary_path) {
-        file_config.git_path = Some(git_path);
+    if let Some(ref api_key) = api_key
+        && file_config.api_key.as_deref() != Some(api_key.as_str())
+    {
+        file_config.api_key = Some(api_key.clone());
         changed = true;
+    }
+
+    if api_base.is_some() {
+        let git_path_missing = file_config
+            .git_path
+            .as_ref()
+            .map(|value| value.trim().is_empty())
+            .unwrap_or(true);
+        if git_path_missing && let Some(git_path) = detect_install_git_path(binary_path) {
+            file_config.git_path = Some(git_path);
+            changed = true;
+        }
     }
 
     if !changed {
@@ -471,6 +448,7 @@ async fn async_run_install(
     params: &HookInstallerParams,
     dry_run: bool,
     verbose: bool,
+    install_skills: bool,
 ) -> Result<HashMap<String, InstallStatus>, GitAiError> {
     let mut any_checked = false;
     let mut has_changes = false;
@@ -644,8 +622,13 @@ async fn async_run_install(
         }
     }
 
-    // Install skills for detected agents only
-    if let Ok(result) = skills_installer::install_skills(dry_run, verbose, &installed_tools)
+    if install_skills {
+        if let Ok(result) = skills_installer::install_skills(dry_run, verbose, &installed_tools)
+            && result.changed
+        {
+            has_changes = true;
+        }
+    } else if let Ok(result) = skills_installer::uninstall_skills(dry_run, verbose)
         && result.changed
     {
         has_changes = true;
@@ -779,7 +762,72 @@ async fn async_run_install(
         emit_install_hooks_metrics(&detailed_results);
     }
 
+    // Warn if git version is below the minimum required for full functionality
+    warn_if_git_version_too_old();
+
     Ok(statuses)
+}
+
+/// Minimum git version required for git-ai to function correctly.
+/// git 2.22.0 introduced `git worktree list --porcelain` output format improvements
+/// and trace2 event logging used by git-ai for attribution.
+const MIN_GIT_VERSION: (u32, u32, u32) = (2, 22, 0);
+
+/// Parse a git version string like "git version 2.39.1" into (major, minor, patch).
+fn parse_git_version(output: &str) -> Option<(u32, u32, u32)> {
+    // Strip the "git version " prefix and any platform suffix (e.g. "(Apple Git-140)")
+    let version_str = output.trim().strip_prefix("git version ")?;
+    let version_str = version_str.split_whitespace().next()?;
+    let mut parts = version_str.split('.');
+    let major: u32 = parts.next()?.parse().ok()?;
+    let minor: u32 = parts.next()?.parse().ok()?;
+    let patch: u32 = parts.next().and_then(|p| p.parse().ok()).unwrap_or(0);
+    Some((major, minor, patch))
+}
+
+/// Print a loud warning if the installed git version is older than MIN_GIT_VERSION.
+fn warn_if_git_version_too_old() {
+    let output = Command::new("git")
+        .args(["--version"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output();
+
+    let version = match output {
+        Ok(o) => {
+            let text = String::from_utf8_lossy(&o.stdout).into_owned();
+            parse_git_version(&text)
+        }
+        Err(_) => None,
+    };
+
+    if let Some(v) = version {
+        let (maj, min, patch) = MIN_GIT_VERSION;
+        if v < (maj, min, patch) {
+            let (vmaj, vmin, vpatch) = v;
+            eprintln!();
+            eprintln!(
+                "\x1b[1;31m╔══════════════════════════════════════════════════════════════╗\x1b[0m"
+            );
+            eprintln!(
+                "\x1b[1;31m║  WARNING: git version too old — git-ai will not work         ║\x1b[0m"
+            );
+            eprintln!(
+                "\x1b[1;31m╚══════════════════════════════════════════════════════════════╝\x1b[0m"
+            );
+            eprintln!(
+                "\x1b[1;31mDetected git {}.{}.{} — git-ai requires git >= {}.{}.{}\x1b[0m",
+                vmaj, vmin, vpatch, maj, min, patch
+            );
+            eprintln!("\x1b[33mPlease upgrade git before using git-ai:\x1b[0m");
+            eprintln!("  macOS:   brew install git");
+            eprintln!(
+                "  Ubuntu:  sudo add-apt-repository ppa:git-core/ppa && sudo apt-get update && sudo apt-get install git"
+            );
+            eprintln!("  Windows: https://git-scm.com/download/win");
+            eprintln!();
+        }
+    }
 }
 
 /// Emit metrics events for install-hooks results
@@ -1087,7 +1135,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn persist_install_api_base_updates_config_and_backfills_git_path() {
+    fn persist_install_config_updates_api_base_and_backfills_git_path() {
         let temp = tempdir().unwrap();
         let install_dir = temp.path().join("bin");
         fs::create_dir_all(&install_dir).unwrap();
@@ -1104,9 +1152,9 @@ mod tests {
         #[cfg(windows)]
         let _userprofile = EnvVarGuard::set("USERPROFILE", temp.path().to_str().unwrap());
         let _api_base = EnvVarGuard::set("API_BASE", "https://enterprise.example");
+        let _api_key = EnvVarGuard::remove("API_KEY");
 
-        let changed =
-            persist_install_api_base_config(&test_binary_path(&install_dir), false).unwrap();
+        let changed = persist_install_config(&test_binary_path(&install_dir), false).unwrap();
 
         assert!(changed);
 
@@ -1116,11 +1164,12 @@ mod tests {
             Some("https://enterprise.example")
         );
         assert_eq!(config.git_path.as_deref(), Some(expected_git_path));
+        assert_eq!(config.api_key, None);
     }
 
     #[test]
     #[serial]
-    fn persist_install_api_base_preserves_existing_git_path() {
+    fn persist_install_config_preserves_existing_git_path() {
         let temp = tempdir().unwrap();
         let install_dir = temp.path().join("bin");
         fs::create_dir_all(&install_dir).unwrap();
@@ -1138,6 +1187,7 @@ mod tests {
         #[cfg(windows)]
         let _userprofile = EnvVarGuard::set("USERPROFILE", temp.path().to_str().unwrap());
         let _api_base = EnvVarGuard::set("API_BASE", "https://enterprise.example");
+        let _api_key = EnvVarGuard::remove("API_KEY");
 
         let existing_git_path = if cfg!(windows) {
             r"D:\PortableGit\bin\git.exe"
@@ -1150,7 +1200,7 @@ mod tests {
         })
         .unwrap();
 
-        persist_install_api_base_config(&test_binary_path(&install_dir), false).unwrap();
+        persist_install_config(&test_binary_path(&install_dir), false).unwrap();
 
         let config = crate::config::load_file_config_public().unwrap();
         assert_eq!(
@@ -1162,7 +1212,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn persist_install_api_base_skips_without_env_or_in_dry_run() {
+    fn persist_install_config_skips_without_env_or_in_dry_run() {
         let temp = tempdir().unwrap();
         let install_dir = temp.path().join("bin");
         fs::create_dir_all(&install_dir).unwrap();
@@ -1172,17 +1222,65 @@ mod tests {
         #[cfg(windows)]
         let _userprofile = EnvVarGuard::set("USERPROFILE", temp.path().to_str().unwrap());
         let _api_base = EnvVarGuard::remove("API_BASE");
+        let _api_key = EnvVarGuard::remove("API_KEY");
 
-        let changed =
-            persist_install_api_base_config(&test_binary_path(&install_dir), false).unwrap();
+        let changed = persist_install_config(&test_binary_path(&install_dir), false).unwrap();
         assert!(!changed);
         assert!(!temp.path().join(".git-ai").join("config.json").exists());
 
         let _api_base = EnvVarGuard::set("API_BASE", "https://enterprise.example");
-        let changed =
-            persist_install_api_base_config(&test_binary_path(&install_dir), true).unwrap();
+        let changed = persist_install_config(&test_binary_path(&install_dir), true).unwrap();
         assert!(!changed);
         assert!(!temp.path().join(".git-ai").join("config.json").exists());
+    }
+
+    #[test]
+    #[serial]
+    fn persist_install_config_persists_api_key() {
+        let temp = tempdir().unwrap();
+        let install_dir = temp.path().join("bin");
+        fs::create_dir_all(&install_dir).unwrap();
+        fs::write(test_binary_path(&install_dir), "").unwrap();
+
+        let _home = EnvVarGuard::set("HOME", temp.path().to_str().unwrap());
+        #[cfg(windows)]
+        let _userprofile = EnvVarGuard::set("USERPROFILE", temp.path().to_str().unwrap());
+        let _api_base = EnvVarGuard::remove("API_BASE");
+        let _api_key = EnvVarGuard::set("API_KEY", "sk-enterprise-key-12345");
+
+        let changed = persist_install_config(&test_binary_path(&install_dir), false).unwrap();
+
+        assert!(changed);
+
+        let config = crate::config::load_file_config_public().unwrap();
+        assert_eq!(config.api_key.as_deref(), Some("sk-enterprise-key-12345"));
+        assert_eq!(config.api_base_url, None);
+    }
+
+    #[test]
+    #[serial]
+    fn persist_install_config_persists_both_api_base_and_api_key() {
+        let temp = tempdir().unwrap();
+        let install_dir = temp.path().join("bin");
+        fs::create_dir_all(&install_dir).unwrap();
+        fs::write(test_binary_path(&install_dir), "").unwrap();
+
+        let _home = EnvVarGuard::set("HOME", temp.path().to_str().unwrap());
+        #[cfg(windows)]
+        let _userprofile = EnvVarGuard::set("USERPROFILE", temp.path().to_str().unwrap());
+        let _api_base = EnvVarGuard::set("API_BASE", "https://enterprise.example");
+        let _api_key = EnvVarGuard::set("API_KEY", "sk-enterprise-key-12345");
+
+        let changed = persist_install_config(&test_binary_path(&install_dir), false).unwrap();
+
+        assert!(changed);
+
+        let config = crate::config::load_file_config_public().unwrap();
+        assert_eq!(
+            config.api_base_url.as_deref(),
+            Some("https://enterprise.example")
+        );
+        assert_eq!(config.api_key.as_deref(), Some("sk-enterprise-key-12345"));
     }
 
     #[cfg(windows)]
@@ -1192,5 +1290,41 @@ mod tests {
             parse_git_og_cmd_path("@echo off\r\n\"C:\\Program Files\\Git\\bin\\git.exe\" %*\r\n"),
             Some("C:\\Program Files\\Git\\bin\\git.exe".to_string())
         );
+    }
+
+    #[test]
+    fn parse_git_version_standard() {
+        assert_eq!(parse_git_version("git version 2.39.1"), Some((2, 39, 1)));
+    }
+
+    #[test]
+    fn parse_git_version_apple_suffix() {
+        assert_eq!(
+            parse_git_version("git version 2.39.3 (Apple Git-146)"),
+            Some((2, 39, 3))
+        );
+    }
+
+    #[test]
+    fn parse_git_version_no_patch() {
+        assert_eq!(parse_git_version("git version 2.22"), Some((2, 22, 0)));
+    }
+
+    #[test]
+    fn parse_git_version_old() {
+        assert_eq!(parse_git_version("git version 2.17.1"), Some((2, 17, 1)));
+        assert!(parse_git_version("git version 2.17.1").unwrap() < MIN_GIT_VERSION);
+    }
+
+    #[test]
+    fn parse_git_version_at_minimum() {
+        assert_eq!(parse_git_version("git version 2.22.0"), Some((2, 22, 0)));
+        assert!(parse_git_version("git version 2.22.0").unwrap() >= MIN_GIT_VERSION);
+    }
+
+    #[test]
+    fn parse_git_version_invalid() {
+        assert_eq!(parse_git_version("not a git version"), None);
+        assert_eq!(parse_git_version(""), None);
     }
 }
