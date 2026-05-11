@@ -1,0 +1,11 @@
+server-go/internal/service/metrics.go
+  ai_agent 22
+server-go/internal/service/metrics_test.go
+  ai_agent 109-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "3346d0a2b4ac6b87c3d12d1954feacf2d5822f5d",
+  "prompts": {}
+}
