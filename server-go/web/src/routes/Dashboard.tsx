@@ -38,7 +38,7 @@ function DashboardSkeleton() {
           ))}
         </div>
 
-        <div className="admin-page__chart-stack" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 24 }}>
+        <div className="admin-page__chart-stack" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(400px, 100%), 1fr))", gap: 24 }}>
           <div className="card"><Skeleton height={280} /></div>
           <div className="card"><Skeleton height={280} /></div>
         </div>
@@ -102,7 +102,7 @@ function DashboardContent() {
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <SummaryCards summary={state.data.summary} rangeLabel={rangeLabel} />
 
-          <div className="admin-page__chart-stack" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 24 }}>
+          <div className="admin-page__chart-stack" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(400px, 100%), 1fr))", gap: 24 }}>
             <TrendChart data={state.data.trend} />
             <AdoptionStackedBar data={state.data.trend} />
           </div>
