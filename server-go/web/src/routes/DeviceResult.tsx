@@ -22,9 +22,18 @@ const COPY: Record<string, { title: string; message: string; tone: Tone; linkURL
   },
 };
 
-const ICONS: Record<Tone, string> = {
-  ok:    "✓",
-  error: "✕",
+const ICONS: Record<Tone, React.ReactNode> = {
+  ok: (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  error: (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
 };
 
 export default function DeviceResult() {
@@ -43,7 +52,7 @@ export default function DeviceResult() {
 
         <h1 className={`device-result__title ${c.tone}`}>{c.title}</h1>
 
-        <div className={`notice ${c.tone}`} style={{ justifyContent: "center" }}>
+        <div className={`notice ${c.tone} device-result__notice`} style={{ justifyContent: "center" }}>
           {c.message}
         </div>
 
