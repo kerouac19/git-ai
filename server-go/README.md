@@ -274,17 +274,6 @@ curl http://127.0.0.1:3000/api/health/database
 | GET | `/worker/releases/:channel/download/install.sh` | 无 | 下载 Unix 安装脚本占位 |
 | GET | `/worker/releases/:channel/download/install.ps1` | 无 | 下载 Windows 安装脚本占位 |
 
-### Authorship（作者归属）
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/authorship/record` | 保存归属记录 |
-| POST | `/api/authorship/commit` | 保存提交归属 |
-| GET | `/api/authorship/commits/:userId` | 用户提交列表（分页） |
-| GET | `/api/authorship/commits/:userId/:commitHash` | 特定用户提交 |
-| GET | `/api/authorship/commit/:commitHash` | 按哈希查归属 |
-| PUT | `/api/authorship/sync/:userId` | 同步（upsert） |
-
 ### Dashboard（仪表板）
 
 | 方法 | 路径 | 说明 |
@@ -326,7 +315,6 @@ bash scripts/smoke-test.sh http://127.0.0.1:3000
 - ④ CAS 上传 + 读取（压缩→加密→解密→解压 roundtrip 验证）
 - ⑤ Metrics 批量写入
 - ⑥ Dashboard 聚合查询
-- ⑦ Authorship CRUD + upsert
 - ⑧ Config CRUD（敏感字段加密 + 脱敏）
 - ⑨ HTML 页面渲染
 - ⑩ 错误处理边界
@@ -459,7 +447,6 @@ server-go/
 │   ├── handler/                    # HTTP 处理器（gin）
 │   │   ├── health.go
 │   │   ├── compatibility.go        # /worker/* 兼容端点
-│   │   ├── authorship.go
 │   │   ├── cas.go
 │   │   ├── dashboard.go
 │   │   └── sysconfig.go
@@ -471,7 +458,6 @@ server-go/
 │   └── service/                    # 业务逻辑
 │       ├── cas.go                  # zlib 压缩 + AES 加密存储
 │       ├── metrics.go              # pgx.CopyFrom 批量写入
-│       ├── authorship.go
 │       ├── dashboard.go            # errgroup 并行聚合查询
 │       ├── sysconfig.go            # 敏感字段加密管理
 │       └── audit.go

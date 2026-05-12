@@ -16,7 +16,6 @@ import (
 
 type CompatibilityHandler struct {
 	DashboardSvc  *service.DashboardService
-	AuthorshipSvc *service.AuthorshipService
 	CasSvc        *service.CasService
 	DeviceFlowSvc *auth.DeviceFlowService
 	MetricsSvc    *service.MetricsService
@@ -37,7 +36,7 @@ func (h *CompatibilityHandler) GetStatus(c *gin.Context) {
 		"service":     "git-ai-private-deploy-server",
 		"version":     "1.0.0",
 		"commit":      h.Commit,
-		"modules":     []string{"authorship", "cas", "dashboard", "config"},
+		"modules":     []string{"cas", "dashboard", "config"},
 		"publicStats": publicStats,
 	})
 }
@@ -73,12 +72,6 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 		return
 	}
 
-	records, total, err := h.AuthorshipSvc.FindAll(c.Request.Context(), userID, 10, 0)
-	if err != nil {
-		Internal(c, err)
-		return
-	}
-
 	orgID, orgName, err := h.UserSvc.GetUserOrg(c.Request.Context(), userID)
 	if err != nil {
 		Internal(c, err)
@@ -95,9 +88,7 @@ func (h *CompatibilityHandler) GetMe(c *gin.Context) {
 			"personal_org_id": userMap["personal_org_id"],
 			"orgs":            userMap["orgs"],
 		},
-		"dashboard":              dashboard,
-		"recentAuthorship":       records,
-		"totalAuthorshipRecords": total,
+		"dashboard": dashboard,
 		"org": gin.H{
 			"id":   orgID,
 			"name": orgName,

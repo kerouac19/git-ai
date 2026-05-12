@@ -75,7 +75,6 @@ func main() {
 	userSvc := &service.UserService{Pool: pool}
 	metricsSvc := &service.MetricsService{Pool: pool}
 	casSvc := &service.CasService{Pool: pool, CASKey: casKey}
-	authorshipSvc := &service.AuthorshipService{Pool: pool}
 	bundleSvc := &service.BundleService{Pool: pool}
 	dashboardSvc := &service.DashboardService{Pool: pool, MetricsSvc: metricsSvc}
 	adminDashSvc := &service.AdminDashboardService{Pool: pool}
@@ -95,7 +94,6 @@ func main() {
 	healthH := &handler.HealthHandler{Pool: pool}
 	compatH := &handler.CompatibilityHandler{
 		DashboardSvc:  dashboardSvc,
-		AuthorshipSvc: authorshipSvc,
 		CasSvc:        casSvc,
 		DeviceFlowSvc: deviceFlowSvc,
 		MetricsSvc:    metricsSvc,
@@ -103,7 +101,6 @@ func main() {
 		TrustProxy:    trustProxy,
 		Commit:        commitHash,
 	}
-	authorshipH := &handler.AuthorshipHandler{Svc: authorshipSvc}
 	bundleH := &handler.BundleHandler{Svc: bundleSvc, TrustProxy: trustProxy}
 	casH := &handler.CasHandler{Svc: casSvc}
 	dashboardH := &handler.DashboardHandler{Svc: dashboardSvc}
@@ -195,22 +192,6 @@ func main() {
 		api.PUT("/releases/:channel/artifacts/:tag/:name", uploadAuth, releaseAdminH.PutArtifact)
 		api.PUT("/releases/:channel/current.json", uploadAuth, releaseAdminH.PutCurrent)
 		api.GET("/releases/:channel/current.json", uploadAuth, releaseAdminH.GetCurrent)
-
-		// Authorship. Writes go through workerMW so CLI tokens and X-API-Key
-		// credentials both work; reads go through jwtMW since the /me
-		// browser session is the only expected reader.
-		authorshipWrite := api.Group("/authorship", jsonLimit, workerMW)
-		{
-			authorshipWrite.POST("/record", authorshipH.SaveRecord)
-			authorshipWrite.POST("/commit", authorshipH.SaveCommitAttribution)
-			authorshipWrite.PUT("/sync/:userId", authorshipH.SyncAuthorship)
-		}
-		authorshipRead := api.Group("/authorship", jsonLimit, jwtMW)
-		{
-			authorshipRead.GET("/commits/:userId", authorshipH.GetUserCommits)
-			authorshipRead.GET("/commits/:userId/:commitHash", authorshipH.GetUserCommitByHash)
-			authorshipRead.GET("/commit/:commitHash", authorshipH.GetCommitAttribution)
-		}
 
 		// CAS — gets the larger casLimit since payloads can be bigger than
 		// the generic 2MB JSON budget. Worker auth accepts either a CLI JWT

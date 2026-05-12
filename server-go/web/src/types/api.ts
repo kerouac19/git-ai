@@ -16,8 +16,6 @@ export interface MeApiResponse {
   success: boolean;
   user: User;
   dashboard: DashboardStats;
-  recentAuthorship: unknown[];
-  totalAuthorshipRecords: number;
   org?: { id: string; name: string };
 }
 
