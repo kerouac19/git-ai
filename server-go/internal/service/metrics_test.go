@@ -39,6 +39,8 @@ func TestValidateBatchShapeAcceptsCurrentMetricsSchema(t *testing.T) {
 					"21": "gpt-5.4",
 					"22": "prompt-123",
 					"23": "external-session-123",
+					// Attrs 26/27/30 are no longer promoted to columns but may still
+					// appear in the client payload; they stay in attrs_json.
 					"30": "{\"workspace\":\"smoke\"}",
 				},
 			},
@@ -174,6 +176,8 @@ func TestUploadBatchPopulatesAllAttrColumns(t *testing.T) {
 					"23": "ext-session-xyz",
 					"24": "session-xyz",
 					"25": "trace-xyz",
+					// Attrs 26/27/30 still allowed in payload (kept in attrs_json)
+					// but no longer promoted into dedicated columns.
 					"26": "parent-session-xyz",
 					"27": "ext-parent-session-xyz",
 					"30": `{"workspace":"smoke"}`,
@@ -194,8 +198,8 @@ func TestUploadBatchPopulatesAllAttrColumns(t *testing.T) {
 		SELECT event_id, git_ai_version, repo_url,
 		       author, commit_sha, base_commit_sha, branch,
 		       tool, model, external_session_id,
-		       session_id, trace_id, parent_session_id,
-		       external_parent_session_id, custom_attributes
+		       session_id, trace_id,
+		       attrs_json->>'26', attrs_json->>'27', attrs_json->>'30'
 		  FROM metrics_events
 		 ORDER BY received_at DESC
 		 LIMIT 1`)
@@ -215,6 +219,9 @@ func TestUploadBatchPopulatesAllAttrColumns(t *testing.T) {
 		t.Fatalf("event_id = %d, want %d", eventID, wantEventID)
 	}
 
+	// First 11 entries are promoted columns; last 3 are read from attrs_json
+	// because parent_session_id / external_parent_session_id / custom_attributes
+	// were removed as columns but the attrs are still preserved in the raw JSON.
 	want := []string{
 		"1.4.7", "https://github.com/test/repo",
 		"dev@example.com", "abc123", "base456", "feature-branch",
@@ -267,14 +274,13 @@ func TestUploadBatchLeavesMissingAttrsAsNull(t *testing.T) {
 		SELECT git_ai_version,
 		       author, commit_sha, base_commit_sha, branch,
 		       tool, model, external_session_id,
-		       session_id, trace_id, parent_session_id,
-		       external_parent_session_id, custom_attributes
+		       session_id, trace_id
 		  FROM metrics_events
 		 ORDER BY received_at DESC
 		 LIMIT 1`)
 
 	var version *string
-	nullables := make([]*string, 12)
+	nullables := make([]*string, 9)
 	scanArgs := []any{&version}
 	for i := range nullables {
 		scanArgs = append(scanArgs, &nullables[i])
@@ -290,8 +296,7 @@ func TestUploadBatchLeavesMissingAttrsAsNull(t *testing.T) {
 	names := []string{
 		"author", "commit_sha", "base_commit_sha", "branch",
 		"tool", "model", "external_session_id",
-		"session_id", "trace_id", "parent_session_id",
-		"external_parent_session_id", "custom_attributes",
+		"session_id", "trace_id",
 	}
 	for i, p := range nullables {
 		if p != nil {

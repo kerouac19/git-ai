@@ -122,9 +122,6 @@ func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinc
 			asNullableString(event.A["23"]), // external_session_id
 			asNullableString(event.A["24"]), // session_id
 			asNullableString(event.A["25"]), // trace_id
-			asNullableString(event.A["26"]), // parent_session_id
-			asNullableString(event.A["27"]), // external_parent_session_id
-			asNullableString(event.A["30"]), // custom_attributes (raw JSON string)
 		})
 	}
 
@@ -139,8 +136,7 @@ func (s *MetricsService) UploadBatch(ctx context.Context, userID string, distinc
 				"git_ai_version", "repo_url",
 				"author", "commit_sha", "base_commit_sha", "branch",
 				"tool", "model", "external_session_id",
-				"session_id", "trace_id", "parent_session_id",
-				"external_parent_session_id", "custom_attributes",
+				"session_id", "trace_id",
 			},
 			pgx.CopyFromRows(validRows),
 		)
