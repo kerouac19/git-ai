@@ -31,9 +31,10 @@ export default function DistributionDonut({ title, rows }: Props) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number, _name: string | number, item: { payload?: { share?: number; label?: string } }) => {
-                  const share = (item?.payload?.share ?? 0) * 100;
-                  return [`${value} (${share.toFixed(1)}%)`, item?.payload?.label];
+                formatter={(value, _name, item) => {
+                  const payload = (item as { payload?: { share?: number; label?: string } } | undefined)?.payload;
+                  const share = (payload?.share ?? 0) * 100;
+                  return [`${value ?? 0} (${share.toFixed(1)}%)`, payload?.label];
                 }}
               />
             </PieChart>
