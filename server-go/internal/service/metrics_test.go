@@ -21,12 +21,12 @@ func TestValidateBatchShapeAcceptsCurrentMetricsSchema(t *testing.T) {
 				"e": float64(1),
 				"v": map[string]any{
 					"2":  float64(100),
-					"4":  []any{float64(10)},
 					"5":  []any{float64(42)},
-					"7":  []any{float64(60)},
 					"10": float64(1711999000),
 					"11": "feat: smoke",
 					"12": "body",
+					"13": "authorship note",
+					"14": "[]",
 				},
 				"a": map[string]any{
 					"0":  "1.2.8",
@@ -37,8 +37,9 @@ func TestValidateBatchShapeAcceptsCurrentMetricsSchema(t *testing.T) {
 					"5":  "main",
 					"20": "claude-code",
 					"21": "gpt-5.4",
-					"22": "prompt-123",
 					"23": "external-session-123",
+					"24": "session-123",
+					"25": "trace-123",
 					// Attrs 26/27/30 are no longer promoted to columns but may still
 					// appear in the client payload; they stay in attrs_json.
 					"30": "{\"workspace\":\"smoke\"}",

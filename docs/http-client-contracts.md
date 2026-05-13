@@ -125,6 +125,8 @@ The client explicitly handles `authorization_pending`, `slow_down`,
 
 - Method: `POST`
 - Path: `/api/bundles`
+- Auth: sent through `ApiContext`; a stored OAuth access token is attached as
+  `Authorization: Bearer <access token>` when available.
 - Body:
 
 ```ts
@@ -298,6 +300,7 @@ Event IDs:
 - `2`: agent usage
 - `3`: install hooks
 - `4`: checkpoint
+- `5`: session event
 
 Common attribute positions:
 
@@ -311,8 +314,12 @@ Common attribute positions:
 | `5` | `branch` |
 | `20` | `tool` |
 | `21` | `model` |
-| `22` | `prompt_id` |
-| `23` | `external_prompt_id` |
+| `22` | `prompt_id` (tombstoned; read only for legacy payloads) |
+| `23` | `external_session_id` |
+| `24` | `session_id` |
+| `25` | `trace_id` |
+| `26` | `parent_session_id` |
+| `27` | `external_parent_session_id` |
 | `30` | `custom_attributes` |
 
 Committed event value positions:
@@ -323,15 +330,17 @@ Committed event value positions:
 | `1` | `git_diff_deleted_lines` |
 | `2` | `git_diff_added_lines` |
 | `3` | `tool_model_pairs` |
-| `4` | `mixed_additions` |
+| `4` | removed |
 | `5` | `ai_additions` |
 | `6` | `ai_accepted` |
-| `7` | `total_ai_additions` |
-| `8` | `total_ai_deletions` |
-| `9` | `time_waiting_for_ai` |
+| `7` | removed |
+| `8` | removed |
+| `9` | removed |
 | `10` | `first_checkpoint_ts` |
 | `11` | `commit_subject` |
 | `12` | `commit_body` |
+| `13` | `authorship_note` |
+| `14` | `hunks` |
 
 Install hooks event value positions:
 
@@ -352,8 +361,19 @@ Checkpoint event value positions:
 | `4` | `lines_deleted` |
 | `5` | `lines_added_sloc` |
 | `6` | `lines_deleted_sloc` |
+| `7` | `external_tool_use_id` |
+| `8` | `edit_kind` |
 
 Agent usage event values are currently an empty sparse map.
+
+Session event value positions:
+
+| Position | Name |
+| --- | --- |
+| `0` | `raw_json` |
+| `1` | `external_event_id` |
+| `2` | `external_parent_event_id` |
+| `3` | `external_tool_use_id` |
 
 - Success response:
 

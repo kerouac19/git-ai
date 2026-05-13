@@ -17,6 +17,12 @@ type BundleHandler struct {
 }
 
 func (h *BundleHandler) Create(c *gin.Context) {
+	userID, _, ok := userSubjectAndRole(c)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+		return
+	}
+
 	var req model.CreateBundleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -26,7 +32,7 @@ func (h *BundleHandler) Create(c *gin.Context) {
 		return
 	}
 
-	bundle, err := h.Svc.CreateBundle(c.Request.Context(), req)
+	bundle, err := h.Svc.CreateBundle(c.Request.Context(), userID, req)
 	if err != nil {
 		Internal(c, err)
 		return

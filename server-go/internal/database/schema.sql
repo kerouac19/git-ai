@@ -11,7 +11,7 @@
 -- 用法：
 --   psql -h <host> -U <user> -d <db> -f schema.sql
 --
--- 脚本最后会 seed schema_migrations(version=8, dirty=false)，
+-- 脚本最后会 seed schema_migrations(version=9, dirty=false)，
 -- 这样 server 启动时调用的 golang-migrate Up() 看到所有已知版本
 -- 都"已应用"，会直接 no-op，而不会重新跑 001/005 等迁移把
 -- 已经被我们刻意删除的表/列再加回来。
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     dirty   BOOLEAN NOT NULL
 );
 INSERT INTO schema_migrations (version, dirty)
-VALUES (8, FALSE)
+VALUES (9, FALSE)
 ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
