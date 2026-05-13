@@ -1,0 +1,13 @@
+server-go/README.md
+  ai_agent 229-231,233,245,251-252,264-265,273-274,281-283,301,313,316,319,322-323,427
+server-go/docs/organization-model-current-state.md
+  ai_agent 7,17-40,77-78,101,104-107,110,112-114,118,139,145,149-150,154,158,165-168,170
+server-go/docs/2026-05-13-client-server-catch-up.md
+  ai_agent 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3a4714af17da473abe35dc33626f80200f44139d",
+  "prompts": {}
+}
