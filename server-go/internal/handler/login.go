@@ -165,16 +165,20 @@ func userToSubject(user *model.User) auth.TokenSubject {
 	if name == "" {
 		name = user.Username
 	}
+	orgName := user.OrgName
+	if orgName == "" {
+		orgName = name
+	}
 	return auth.TokenSubject{
 		Sub:           user.ID,
 		Email:         user.Email,
 		Name:          name,
-		PersonalOrgID: user.ID,
+		PersonalOrgID: user.OrgID,
 		Role:          user.Role,
 		Orgs: []auth.Org{
 			{
-				OrgID:   user.ID,
-				OrgName: name,
+				OrgID:   user.OrgID,
+				OrgName: orgName,
 				OrgSlug: user.Username,
 				Role:    user.Role,
 			},

@@ -203,14 +203,14 @@ func main() {
 		}
 
 		// Dashboard. Public stats stay open; per-user stats require a
-		// session and always map to the caller's own sub. /global returns
-		// the same cross-user/cross-org payload to any authenticated user.
+		// session and always map to the caller's own sub. /global is a
+		// cross-user/cross-org admin view.
 		dashboard := api.Group("/dashboard", jsonLimit)
 		{
 			dashboard.GET("/public", dashboardH.GetPublicStats)
 			dashboard.GET("/stats", jwtMW, dashboardH.GetStats)
 			dashboard.POST("/generate-report", jwtMW, csrfMW, dashboardH.GenerateReport)
-			dashboard.GET("/global", jwtMW, adminDashH.GetGlobalStats)
+			dashboard.GET("/global", jwtMW, adminOnly(), adminDashH.GetGlobalStats)
 		}
 
 		// Config (JWT protected)

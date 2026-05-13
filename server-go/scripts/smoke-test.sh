@@ -137,11 +137,12 @@ USER_CODE=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdi
 echo "    device_code=$DEVICE_CODE"
 echo "    user_code=$USER_CODE"
 
-# Get device page (HTML)
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/oauth/device?user_code=$USER_CODE")
+# Device info API
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/oauth/device/info?user_code=$USER_CODE")
 BODY=$(cat /tmp/smoke_body)
-assert_status "GET /oauth/device?user_code=..." 200 "$STATUS"
-assert_contains "  HTML contains user code" "$BODY" "$USER_CODE"
+assert_status "GET /api/oauth/device/info?user_code=..." 200 "$STATUS"
+assert_json_field "  status=pending" "$BODY" "['status']" "pending"
+assert_json_field "  authenticated=False" "$BODY" "['authenticated']" "False"
 
 # Poll before approval — should get authorization_pending
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
@@ -152,30 +153,15 @@ BODY=$(cat /tmp/smoke_body)
 assert_status "POST /worker/oauth/token (pending)" 400 "$STATUS"
 assert_json_field "  error=authorization_pending" "$BODY" "['error']" "authorization_pending"
 
-# Approve
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
-  -d "user_code=$USER_CODE" \
-  "$BASE_URL/oauth/device/approve")
-BODY=$(cat /tmp/smoke_body)
-assert_status "POST /oauth/device/approve" 200 "$STATUS"
-assert_contains "  HTML says approved" "$BODY" "Device Approved"
-
-# Start a new device flow for token exchange (the approved one got deleted on exchange)
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST "$BASE_URL/worker/oauth/device/code")
-BODY2=$(cat /tmp/smoke_body)
-DEVICE_CODE2=$(echo "$BODY2" | python3 -c "import sys,json; print(json.load(sys.stdin)['device_code'])")
-USER_CODE2=$(echo "$BODY2" | python3 -c "import sys,json; print(json.load(sys.stdin)['user_code'])")
-
-# Approve the second one
-curl -s -o /dev/null -X POST -d "user_code=$USER_CODE2" "$BASE_URL/oauth/device/approve"
-
-# Exchange for token
+# install_nonce exchange provides a non-interactive token for the rest of this
+# API smoke test. Full device approval requires a browser cookie session and is
+# covered by the SPA/device-flow integration path, not this headless script.
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
-  -d "{\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\",\"device_code\":\"$DEVICE_CODE2\"}" \
+  -d '{"grant_type":"install_nonce","install_nonce":"test-nonce-123"}' \
   "$BASE_URL/worker/oauth/token")
 BODY=$(cat /tmp/smoke_body)
-assert_status "POST /worker/oauth/token (exchange)" 200 "$STATUS"
+assert_status "POST /worker/oauth/token (install_nonce)" 200 "$STATUS"
 assert_json_exists "  access_token present" "$BODY" "['access_token']"
 assert_json_exists "  refresh_token present" "$BODY" "['refresh_token']"
 assert_json_field "  token_type=Bearer" "$BODY" "['token_type']" "Bearer"
@@ -183,6 +169,7 @@ assert_json_field "  token_type=Bearer" "$BODY" "['token_type']" "Bearer"
 ACCESS_TOKEN=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 REFRESH_TOKEN=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['refresh_token'])")
 echo "    access_token=${ACCESS_TOKEN:0:20}..."
+AUTH_HEADER="Authorization: Bearer $ACCESS_TOKEN"
 
 # Refresh token exchange
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
@@ -193,23 +180,26 @@ BODY=$(cat /tmp/smoke_body)
 assert_status "POST /worker/oauth/token (refresh)" 200 "$STATUS"
 assert_json_exists "  new access_token" "$BODY" "['access_token']"
 
-# install_nonce exchange
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"grant_type":"install_nonce","install_nonce":"test-nonce-123"}' \
-  "$BASE_URL/worker/oauth/token")
-BODY=$(cat /tmp/smoke_body)
-assert_status "POST /worker/oauth/token (install_nonce)" 200 "$STATUS"
-assert_json_exists "  access_token present" "$BODY" "['access_token']"
-
 # Deny flow
 STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST "$BASE_URL/worker/oauth/device/code")
 DENY_BODY=$(cat /tmp/smoke_body)
 DENY_USER_CODE=$(echo "$DENY_BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['user_code'])")
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST -d "user_code=$DENY_USER_CODE" "$BASE_URL/oauth/device/deny")
+DENY_DEVICE_CODE=$(echo "$DENY_BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['device_code'])")
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+  -d "{\"user_code\":\"$DENY_USER_CODE\"}" \
+  "$BASE_URL/api/oauth/device/deny")
 BODY=$(cat /tmp/smoke_body)
-assert_status "POST /oauth/device/deny" 200 "$STATUS"
-assert_contains "  HTML says denied" "$BODY" "Device Denied"
+assert_status "POST /api/oauth/device/deny" 200 "$STATUS"
+assert_json_field "  status=denied" "$BODY" "['status']" "denied"
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "Content-Type: application/json" \
+  -d "{\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\",\"device_code\":\"$DENY_DEVICE_CODE\"}" \
+  "$BASE_URL/worker/oauth/token")
+BODY=$(cat /tmp/smoke_body)
+assert_status "POST /worker/oauth/token (denied)" 400 "$STATUS"
+assert_json_field "  error=access_denied" "$BODY" "['error']" "access_denied"
 
 echo ""
 
@@ -309,14 +299,15 @@ STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
   -d '{
     "v": 1,
     "events": [
-      {"t": 1712000000, "e": 1, "v": {"2": 100, "4": [10], "5": [42], "7": [60], "10": 1711999000, "11": "feat: smoke", "12": "sync latest metrics schema"}, "a": {"0": "1.2.8", "1": "https://github.com/test/repo", "2": "dev@example.com", "3": "abc123", "4": "base456", "5": "main", "20": "claude-code", "21": "gpt-5.4", "22": "prompt-123", "23": "external-session-123", "30": "{\"workspace\":\"smoke\"}"}},
-      {"t": 1712000001, "e": 2, "v": {}, "a": {"0": "1.2.8", "20": "cursor", "21": "claude-3.5", "22": "prompt-456", "30": "{\"source\":\"smoke-test\"}"}},
-      {"t": 1712000002, "e": 4, "v": {"2": "src/main.rs"}, "a": {"0": "0.1.0"}}
+      {"t": 1712000000, "e": 1, "v": {"2": 100, "5": [42], "10": 1711999000, "11": "feat: smoke", "12": "sync latest metrics schema", "13": "authorship note", "14": "[]"}, "a": {"0": "1.2.8", "1": "https://github.com/test/repo", "2": "dev@example.com", "3": "abc123", "4": "base456", "5": "main", "20": "claude-code", "21": "gpt-5.4", "23": "external-session-123", "24": "session-123", "25": "trace-123", "30": "{\"workspace\":\"smoke\"}"}},
+      {"t": 1712000001, "e": 2, "v": {}, "a": {"0": "1.2.8", "20": "cursor", "21": "claude-3.5", "23": "external-session-456", "24": "session-456", "30": "{\"source\":\"smoke-test\"}"}},
+      {"t": 1712000002, "e": 4, "v": {"0": 1712000002, "1": "ai_agent", "2": "src/main.rs", "3": 5, "4": 1, "5": 4, "6": 1, "7": "tool-use-1", "8": "file_edit"}, "a": {"0": "0.1.0", "23": "external-session-789", "24": "session-789"}},
+      {"t": 1712000003, "e": 5, "v": {"0": {"type": "message", "text": "hello"}, "1": "event-1", "2": "parent-event-1", "3": "tool-use-1"}, "a": {"0": "1.4.7", "20": "claude-code", "21": "gpt-5.4", "23": "external-session-789", "24": "session-789", "25": "trace-789"}}
     ]
   }' \
   "$BASE_URL/worker/metrics/upload")
 BODY=$(cat /tmp/smoke_body)
-assert_status "POST /worker/metrics/upload (3 events)" 200 "$STATUS"
+assert_status "POST /worker/metrics/upload (4 events)" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
 
 # Also test /workers/* plural path
@@ -333,11 +324,11 @@ bold "⑥ Dashboard Stats"
 echo ""
 # ═══════════════════════════════════════════
 
-USER_ID=$(echo "$ACCESS_TOKEN" | python3 -c "
+USER_ROLE=$(echo "$ACCESS_TOKEN" | python3 -c "
 import sys,json,base64
 token = sys.stdin.read().strip().split('.')[1]
 token += '=' * (4 - len(token) % 4)
-print(json.loads(base64.b64decode(token))['sub'])
+print(json.loads(base64.b64decode(token)).get('role', ''))
 ")
 
 # Dashboard stats require auth; query ?userId= is ignored server-side.
@@ -353,6 +344,26 @@ STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/dashboard/p
 BODY=$(cat /tmp/smoke_body)
 assert_status "GET /api/dashboard/public" 200 "$STATUS"
 assert_json_field "  success=True" "$BODY" "['success']" "True"
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/dashboard/global")
+assert_status "GET /api/dashboard/global (no auth) → 401" 401 "$STATUS"
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -H "$AUTH_HEADER" "$BASE_URL/api/dashboard/global")
+BODY=$(cat /tmp/smoke_body)
+if [ "$USER_ROLE" = "admin" ]; then
+  assert_status "GET /api/dashboard/global (admin token)" 200 "$STATUS"
+  assert_json_field "  success=True" "$BODY" "['success']" "True"
+else
+  assert_status "GET /api/dashboard/global (non-admin token) → 403" 403 "$STATUS"
+fi
+
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" -X POST \
+  -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+  -d '{"range":"7d","format":"json"}' \
+  "$BASE_URL/api/dashboard/generate-report")
+BODY=$(cat /tmp/smoke_body)
+assert_status "POST /api/dashboard/generate-report → 501" 501 "$STATUS"
+assert_json_field "  error=not_implemented" "$BODY" "['error']" "not_implemented"
 
 echo ""
 
@@ -419,26 +430,14 @@ assert_status "DELETE /api/config/test.secret" 200 "$STATUS"
 echo ""
 
 # ═══════════════════════════════════════════
-bold "⑨ HTML Pages"
+bold "⑨ Device Flow API Edge Cases"
 echo ""
 # ═══════════════════════════════════════════
 
-# /me without session → login required page
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/me")
-BODY=$(cat /tmp/smoke_body)
-assert_status "GET /me (no session) → 401" 401 "$STATUS"
-assert_contains "  shows login prompt" "$BODY" "git-ai login"
-
-# /me with cookie session
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" \
-  -H "Cookie: git_ai_session=$ACCESS_TOKEN" "$BASE_URL/me")
-BODY=$(cat /tmp/smoke_body)
-assert_status "GET /me (with cookie)" 200 "$STATUS"
-assert_contains "  HTML dashboard rendered" "$BODY" "Git AI"
-
-# /oauth/device without user_code → 400
-STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/oauth/device")
-assert_status "GET /oauth/device (no code) → 400" 400 "$STATUS"
+# SPA routes such as /me and /oauth/device are served by nginx/static hosting
+# in production. This script targets the Go API process directly.
+STATUS=$(curl -s -o /tmp/smoke_body -w "%{http_code}" "$BASE_URL/api/oauth/device/info")
+assert_status "GET /api/oauth/device/info (no code) → 400" 400 "$STATUS"
 
 echo ""
 

@@ -51,12 +51,9 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 }
 
 func (h *DashboardHandler) GenerateReport(c *gin.Context) {
-	var params map[string]interface{}
-	_ = c.ShouldBindJSON(&params)
-
-	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"message":  "Report generation initiated",
-		"reportId": "sample-report-id",
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"success": false,
+		"error":   "not_implemented",
+		"message": "Report generation is not implemented",
 	})
 }

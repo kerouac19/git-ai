@@ -15,6 +15,8 @@ type User struct {
 	PasswordHash string    `json:"-"`
 	Role         string    `json:"role"`
 	Status       int       `json:"status"`
+	OrgID        string    `json:"org_id"`
+	OrgName      string    `json:"org_name,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

@@ -17,10 +17,12 @@ type UserService struct {
 
 func (s *UserService) FindByUsernameOrEmail(ctx context.Context, login string) (*model.User, error) {
 	row := s.Pool.QueryRow(ctx, `
-		SELECT id, username, COALESCE(email, ''), COALESCE(display_name, ''),
-		       password_hash, role, status, created_at, updated_at
-		FROM users
-		WHERE username = $1 OR email = $1
+		SELECT u.id, u.username, COALESCE(u.email, ''), COALESCE(u.display_name, ''),
+		       u.password_hash, u.role, u.status, u.org_id::text, o.name,
+		       u.created_at, u.updated_at
+		FROM users u
+		JOIN orgs o ON o.id = u.org_id
+		WHERE u.username = $1 OR u.email = $1
 		LIMIT 1`, login)
 
 	return scanUser(row)
@@ -28,10 +30,12 @@ func (s *UserService) FindByUsernameOrEmail(ctx context.Context, login string) (
 
 func (s *UserService) FindByID(ctx context.Context, id string) (*model.User, error) {
 	row := s.Pool.QueryRow(ctx, `
-		SELECT id, username, COALESCE(email, ''), COALESCE(display_name, ''),
-		       password_hash, role, status, created_at, updated_at
-		FROM users
-		WHERE id = $1`, id)
+		SELECT u.id, u.username, COALESCE(u.email, ''), COALESCE(u.display_name, ''),
+		       u.password_hash, u.role, u.status, u.org_id::text, o.name,
+		       u.created_at, u.updated_at
+		FROM users u
+		JOIN orgs o ON o.id = u.org_id
+		WHERE u.id = $1`, id)
 
 	return scanUser(row)
 }
@@ -69,7 +73,8 @@ func scanUser(row pgx.Row) (*model.User, error) {
 	var u model.User
 	err := row.Scan(
 		&u.ID, &u.Username, &u.Email, &u.DisplayName,
-		&u.PasswordHash, &u.Role, &u.Status, &u.CreatedAt, &u.UpdatedAt,
+		&u.PasswordHash, &u.Role, &u.Status, &u.OrgID, &u.OrgName,
+		&u.CreatedAt, &u.UpdatedAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil

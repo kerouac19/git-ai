@@ -21,8 +21,8 @@ type AdminDashboardHandler struct {
 	Svc AdminDashboardSvc
 }
 
-// GetGlobalStats returns the cross-user/cross-org dashboard payload to any
-// authenticated user. Routed at GET /api/dashboard/global.
+// GetGlobalStats returns the cross-user/cross-org dashboard payload. The
+// production route is guarded by JWT auth plus adminOnly middleware.
 func (h *AdminDashboardHandler) GetGlobalStats(c *gin.Context) {
 	rangeKey := c.DefaultQuery("range", "7d")
 	if rangeKey != "7d" && rangeKey != "30d" {
