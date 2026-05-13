@@ -226,31 +226,30 @@ curl http://127.0.0.1:3000/api/health/database
 |------|------|------|
 | POST | `/worker/oauth/device/code` | 发起设备授权流程 |
 | POST | `/worker/oauth/token` | Token 交换（device_code / refresh_token / install_nonce） |
-| GET | `/oauth/device?user_code=XXX` | 设备授权页面（HTML） |
-| POST | `/oauth/device/approve` | 批准授权 |
-| POST | `/oauth/device/deny` | 拒绝授权 |
+| GET | `/api/oauth/device/info?user_code=XXX` | 查询设备授权状态 |
+| POST | `/api/oauth/device/approve` | 批准授权（Cookie session + CSRF） |
+| POST | `/api/oauth/device/deny` | 拒绝授权（JWT/Cookie + CSRF） |
 
-> 同时支持 `/workers/*` 复数路径。
+> Worker 端点同时支持 `/workers/*` 复数路径。`/oauth/device`、`/me` 等 SPA 页面由 nginx/static hosting 托管，Go 进程只提供 `/api/*` 与 `/worker(s)/*` API。
 
 ### 用户
 
 | 方法 | 路径 | 认证 | 说明 |
 |------|------|------|------|
 | GET | `/api/me` | JWT | 当前用户信息 + 仪表板 |
-| GET | `/me` | Cookie | 用户仪表板页面（HTML） |
 
 ### Bundles
 
 | 方法 | 路径 | 认证 | 说明 |
 |------|------|------|------|
-| POST | `/api/bundles` | 无 | 创建分享 bundle |
+| POST | `/api/bundles` | JWT | 创建分享 bundle |
 
 ### CAS（内容寻址存储）
 
 | 方法 | 路径 | 认证 | 说明 |
 |------|------|------|------|
-| POST | `/api/cas/upload` | 无 | 上传内容 |
-| GET | `/api/cas/read/:hash` | 无 | 读取内容 |
+| POST | `/api/cas/upload` | JWT 或 `X-API-Key` | 上传内容 |
+| GET | `/api/cas/read/:hash` | JWT 或 `X-API-Key` | 读取内容 |
 | POST | `/worker/cas/upload` | JWT 或 `X-API-Key` | Worker 上传（JSON 对象或 multipart 文件） |
 | GET | `/worker/cas?hashes=...` | JWT 或 `X-API-Key` | 批量读取 |
 | GET | `/worker/cas/?hashes=...` | JWT 或 `X-API-Key` | 批量读取（兼容尾斜杠） |
@@ -262,8 +261,8 @@ curl http://127.0.0.1:3000/api/health/database
 |------|------|------|------|
 | POST | `/worker/metrics/upload` | JWT 或 `X-API-Key` | 批量上传事件（pgx.CopyFrom） |
 
-当前已与客户端 `metrics` wire format `v=1` 对齐，接受事件 ID `1/2/3/4`，单批次最多 `250` 条。
-`values_json` / `attrs_json` 会保留原始 sparse payload，因此兼容当前客户端新增的 committed 字段 `10/11/12` 与 attributes `2/3/4/5/30`。
+当前已与客户端 `metrics` wire format `v=1` 对齐，接受事件 ID `1/2/3/4/5`，单批次最多 `250` 条。
+`values_json` / `attrs_json` 会保留原始 sparse payload，因此兼容 committed 字段 `10/11/12/13/14`、checkpoint 字段 `7/8`、session event 字段 `0/1/2/3` 与 attributes `2/3/4/5/23/24/25/26/27/30`。
 
 ### Releases / Upgrade
 
@@ -271,16 +270,17 @@ curl http://127.0.0.1:3000/api/health/database
 |------|------|------|------|
 | GET | `/worker/releases` | 无 | 查询 release channels |
 | GET | `/worker/releases/:channel/download/SHA256SUMS` | 无 | 下载校验和 |
-| GET | `/worker/releases/:channel/download/install.sh` | 无 | 下载 Unix 安装脚本占位 |
-| GET | `/worker/releases/:channel/download/install.ps1` | 无 | 下载 Windows 安装脚本占位 |
+| GET | `/worker/releases/:channel/download/install.sh` | 无 | 下载 Unix 安装脚本 |
+| GET | `/worker/releases/:channel/download/install.ps1` | 无 | 下载 Windows 安装脚本 |
 
 ### Dashboard（仪表板）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/dashboard/public` | 公开统计 |
-| GET | `/api/dashboard/stats?userId=...` | 用户仪表板统计 |
-| POST | `/api/dashboard/generate-report` | 生成报告 |
+| GET | `/api/dashboard/stats` | 当前认证用户仪表板统计 |
+| GET | `/api/dashboard/global?range=7d|30d` | 全局仪表板统计，仅 admin |
+| POST | `/api/dashboard/generate-report` | 未实现，当前返回 `501 not_implemented` |
 
 ### Config（系统配置）
 
@@ -298,7 +298,7 @@ curl http://127.0.0.1:3000/api/health/database
 
 ### 冒烟测试
 
-自动化测试脚本覆盖全部端点（86 个断言）：
+自动化测试脚本覆盖核心 Go API 端点：
 
 ```bash
 # 先启动服务，然后运行：
@@ -310,14 +310,16 @@ bash scripts/smoke-test.sh http://127.0.0.1:3000
 
 测试覆盖：
 - ① 健康检查（5 个端点）
-- ② OAuth Device Flow（完整流程：发起→pending→approve→exchange→refresh→install_nonce→deny）
+- ② OAuth Device Flow API（发起→info→pending→install_nonce→refresh→deny）
 - ③ JWT 认证保护
 - ④ CAS 上传 + 读取（压缩→加密→解密→解压 roundtrip 验证）
-- ⑤ Metrics 批量写入
+- ⑤ Metrics 批量写入（含 event_id `5`）
 - ⑥ Dashboard 聚合查询
 - ⑧ Config CRUD（敏感字段加密 + 脱敏）
-- ⑨ HTML 页面渲染
+- ⑨ Device Flow API 边界
 - ⑩ 错误处理边界
+
+> SPA 页面由 nginx/static hosting 托管，不属于 Go API smoke test 范围。
 
 ### 客户端联调
 
@@ -422,12 +424,7 @@ docker run -d -p 3000:3000 \
 ```
 server-go/
 ├── cmd/server/
-│   ├── main.go                     # 入口：配置、路由注册、HTML 页面处理
-│   └── templates/                  # HTML 模板（embed 嵌入到二进制）
-│       ├── device_flow.html        # 设备授权页
-│       ├── device_result.html      # 授权结果页
-│       ├── dashboard.html          # 用户仪表板
-│       └── login_required.html     # 登录提示页
+│   └── main.go                     # 入口：配置、路由注册、API 处理
 ├── internal/
 │   ├── auth/                       # 认证层
 │   │   ├── jwt.go                  # JWT 签发 / 验证（HS256）
