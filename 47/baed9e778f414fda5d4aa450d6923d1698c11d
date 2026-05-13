@@ -1,0 +1,23 @@
+server-go/internal/handler/admin_dashboard.go
+  ai_agent 24-25
+server-go/internal/handler/dashboard.go
+  ai_agent 54-57
+server-go/cmd/server/main.go
+  ai_agent 206-207,213
+server-go/internal/service/user.go
+  ai_agent 20-25,33-38,76-77
+server-go/internal/handler/login.go
+  ai_agent 168-171,176,180-181
+server-go/scripts/smoke-test.sh
+  ai_agent 140-141,143-145,156-158,161,164,172,187-191,193-202,302-305,310,327,331,348-367,433,437-440
+server-go/internal/handler/login_test.go
+  ai_agent 1-37
+server-go/internal/model/user.go
+  ai_agent 18-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "47baed9e778f414fda5d4aa450d6923d1698c11d",
+  "prompts": {}
+}
