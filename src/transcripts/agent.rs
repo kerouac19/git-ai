@@ -51,6 +51,18 @@ pub trait Agent: Send + Sync {
         (None, None, None)
     }
 
+    /// Extract the event timestamp as seconds since Unix epoch.
+    ///
+    /// Every agent MUST provide a concrete timestamp for each event. Agents with
+    /// per-event timestamps in JSON should parse them; agents without should fall
+    /// back to file metadata (birthtime for first event, mtime for others).
+    fn extract_event_timestamp(
+        &self,
+        event: &serde_json::Value,
+        file_meta: &std::fs::Metadata,
+        is_first_event: bool,
+    ) -> u32;
+
     /// Infer the working directory from the transcript file content.
     ///
     /// Reads the first few lines of the transcript looking for a `cwd` field.
@@ -60,11 +72,30 @@ pub trait Agent: Send + Sync {
     }
 }
 
+/// Fallback timestamp from file metadata when an event lacks a per-event timestamp.
+/// Uses birthtime (creation time) for the first event, mtime for all others.
+pub fn file_time_fallback(meta: &std::fs::Metadata, is_first_event: bool) -> u32 {
+    let time = if is_first_event {
+        meta.created().or_else(|_| meta.modified()).ok()
+    } else {
+        meta.modified().ok()
+    };
+    time.and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs() as u32)
+        .unwrap_or_else(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() as u32
+        })
+}
+
 const ALL_AGENT_TYPES: &[&str] = &[
     "claude",
     "cursor",
     "droid",
     "copilot",
+    "copilot-cli",
     "gemini",
     "continue-cli",
     "windsurf",
@@ -83,6 +114,9 @@ pub fn get_agent(agent_type: &str) -> Option<Box<dyn Agent>> {
         "cursor" => Some(Box::new(super::agents::CursorAgent::new())),
         "droid" => Some(Box::new(super::agents::DroidAgent::new())),
         "copilot" | "github-copilot" => Some(Box::new(super::agents::CopilotAgent::new())),
+        "copilot-cli" | "github-copilot-cli" => {
+            Some(Box::new(super::agents::CopilotCliAgent::new()))
+        }
         "gemini" => Some(Box::new(super::agents::GeminiAgent::new())),
         "continue-cli" => Some(Box::new(super::agents::ContinueAgent::new())),
         "windsurf" => Some(Box::new(super::agents::WindsurfAgent::new())),
