@@ -1,0 +1,9 @@
+server-go/docs/client-server-catch-up-process.md
+  ai_agent 1-219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "792ea1d617df3a7c337d8ea0f70ac9e89d077e9e",
+  "prompts": {}
+}
