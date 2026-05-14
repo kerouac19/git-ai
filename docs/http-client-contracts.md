@@ -274,6 +274,86 @@ A 404 response is treated as:
 }
 ```
 
+## Notes (HTTP Authorship Notes Backend)
+
+Opt-in via `notes_backend.kind = http` and `notes_backend.backend_url =
+<base>` in `~/.git-ai/config.json`. Default kind is `git_notes` and the
+endpoints below are not called. The backend may share the main API host or
+run as a separate service; auth still uses the standard `ApiContext` headers
+(`X-API-Key` or `Authorization: Bearer <jwt>` plus `User-Agent`,
+`X-Distinct-ID`, optional `X-Author-Identity`). Both endpoints are skipped
+when neither `is_logged_in()` nor `has_api_key()` is true (matches the daemon
+flush_notes pattern). See `src/api/notes.rs` and the reference implementation
+in `src/notes/reference_server.rs`.
+
+### Upload Notes
+
+- Method: `POST`
+- Path: `/worker/notes/upload`
+- Body:
+
+```ts
+{
+  entries: Array<{
+    commit_sha: string,  // hex commit SHA
+    content: string      // serialized authorship-log payload
+  }>
+}
+```
+
+- Success response (200):
+
+```ts
+{
+  success_count: number,
+  failure_count: number
+}
+```
+
+- Error response (400) for malformed body:
+
+```ts
+{
+  error: string,
+  details?: unknown
+}
+```
+
+The reference server caps request body size at 50 MiB; production backends
+should enforce a comparable cap. There is no client-side per-request entry
+limit on the upload path (the bulk uploader `git-ai notes migrate` chunks
+locally), so the server should set its own batch ceiling.
+
+### Read Notes
+
+- Method: `GET`
+- Path: `/worker/notes/`
+- Query string:
+
+```ts
+{
+  commits: string  // comma-joined hex SHAs
+}
+```
+
+`commits` is built by `commit_shas.join(",")`. The client validates each SHA
+is hex-only before sending; non-hex input is rejected without a network call.
+The warm-cache path in `src/git/notes_api.rs::warm_cache_for_remote` chunks
+SHAs into batches of **100** per request.
+
+- Success response (200):
+
+```ts
+{
+  notes: { [commit_sha: string]: string }
+}
+```
+
+A 404 response is treated as success with an empty `notes` map ("no notes
+found for any of the requested SHAs"). Any other non-200 status is surfaced
+as an error and the warm-cache path treats it as a cache miss rather than a
+hard failure.
+
 ## Metrics
 
 ### Upload Metrics
