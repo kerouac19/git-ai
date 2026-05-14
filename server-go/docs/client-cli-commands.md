@@ -2,6 +2,8 @@
 
 本文记录当前 Rust 客户端 `git-ai` 命令入口，以及这些命令与 `server-go` / Git AI API / 本机后台服务之间的关系。
 
+接口级 request / response 契约见 [client-api-contracts.md](client-api-contracts.md)。
+
 核对来源：
 
 - `src/commands/git_ai_handlers.rs`
