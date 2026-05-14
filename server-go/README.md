@@ -13,6 +13,12 @@
 | 数据库 | Prisma ORM | pgx + 原生 SQL |
 | Metrics 写入 | 逐条 INSERT | pgx.CopyFrom 批量写入 |
 
+## 相关文档
+
+- [客户端命令与服务端关系](docs/client-cli-commands.md)：`git-ai` CLI 命令清单，以及哪些命令会访问 Git AI API / `server-go`。
+- [生产部署](docs/production-deployment.md)：发布说明、反向代理配置和排障建议。
+- [客户端/服务端追平流程](docs/client-server-catch-up-process.md)：跟随 Rust 客户端协议演进的固定流程。
+
 ## 环境要求
 
 - Go 1.26+
